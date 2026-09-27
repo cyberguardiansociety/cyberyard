@@ -7227,3 +7227,16 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
   .account-subnav-group-label{ display:none; }
   .account-subnav-rule{ margin:2px 6px; }
 }
+
+/* ---------- sticky offsets for the play flow ----------
+   The filter rail and the operator inspector were positioned to clear the
+   site header *plus* the account sub-nav. That bar is now hidden on the play
+   flow, so they would sit ~64px lower than the content they track. Re-anchor
+   them to the header alone; the other surfaces keep the original offset. */
+#view-challenges .range-filters,
+#view-leaderboard .lb-selected-user{ top:88px; }
+@media (max-width:1020px){
+  /* Already static below this width; the rule is a no-op but keeps intent clear. */
+  #view-challenges .range-filters,
+  #view-leaderboard .lb-selected-user{ top:auto; }
+}

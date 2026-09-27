@@ -1099,21 +1099,25 @@
   }
 
   /* ---------- account sub-navigation ----------
-     One shared switcher for every signed-in view. It replaces the sidebar
-     that used to be copy-pasted into each view, so account navigation is
-     declared once and can never drift between pages. It is only rendered
-     for an authenticated session on an account surface. */
-  const ACCOUNT_VIEWS = new Set([
-    'dashboard', 'profile', 'badges', 'activity', 'settings', 'challenges',
-    'challenge-detail', 'leaderboard', 'teams', 'submit-flag', 'community',
-    'events', 'event-detail', 'admin'
+     The old per-view sidebar was copy-pasted into thirteen views, so account
+     navigation was declared thirteen times and could drift. This one bar is
+     declared once, and it now appears only on the account surfaces.
+
+     It is deliberately ABSENT from the play flow — challenges, challenge
+     detail, scoreboard, teams and submit flag. All of those already have a
+     permanent link in the site header, so a second full-width nav strip
+     directly beneath it was pure duplication, and the challenges page has
+     its own filter rail competing for the same space. The avatar menu and
+     the footer still reach every destination from there. */
+  const SUBNAV_VIEWS = new Set([
+    'dashboard', 'profile', 'badges', 'activity', 'settings',
+    'community', 'events', 'event-detail', 'admin'
   ]);
 
   function syncAccountSubnav(session){
     const bar = document.getElementById('account-subnav');
     if(!bar) return;
-    const show = !!session && ACCOUNT_VIEWS.has(activeViewName);
-    bar.hidden = !show;
+    bar.hidden = !(!!session && SUBNAV_VIEWS.has(activeViewName));
     if(!session) return;
     setText('account-subnav-username', session.username);
     setText('account-subnav-email', session.email);
