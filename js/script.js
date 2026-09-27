@@ -629,10 +629,13 @@
     try{
       const data = await CyberYardHubAPI.auth.login({ email, password: pass, rememberMe });
       currentUser = data.user;
-      /* No "signed in successfully" banner: the dashboard that replaces this
-         form is the confirmation. A toast here would only repeat it. */
+      /* No "signed in successfully" banner: the page that replaces this form
+         is the confirmation. Land on the Rules so a first-time operator reads
+         the conduct and scoring rules before touching the range. */
       await refreshNavState();
-      goToDashboard();
+      currentNav = 'rules';
+      updateActiveNav();
+      goTo('rules');
     }catch(e){
       if(e.isNetworkError){
         showAlert('login', 'error', e.message);
@@ -1013,7 +1016,13 @@
     const avatar=document.getElementById('profile-edit-avatar').value.trim(); if(avatar) payload.avatarUrl=avatar; else payload.avatarUrl=null;
     try{
       const response=await CyberYardHubAPI.users.updateProfile(payload);
-      currentUser={...currentUser,username:response.profile.username};
+      currentUser={...currentUser,username:response.profile.username,profile:{...(currentUser.profile||{}),avatarUrl:response.profile.avatarUrl}};
+      /* Push the new identity into the navbar/sub-nav/drawer straight away so
+         a changed handle or avatar is visible without a reload. */
+      syncUserAvatar(currentUser);
+      document.getElementById('nav-avatar-initial').textContent = (response.profile.username || '?').charAt(0).toUpperCase();
+      document.getElementById('ad-username').textContent = response.profile.username;
+      document.getElementById('mm-username').textContent = response.profile.username;
       profileEditAlert('success','Profile updated successfully.');
       await renderProfilePage(currentUser);
       setTimeout(closeProfileEditor,500);
@@ -1031,12 +1040,22 @@
   function closeProfileConnections(){ document.getElementById('profile-connections-panel')?.classList.add('hidden'); }
 
   async function renderProfilePage(session){
-    const initial = (session.username || '?').charAt(0).toUpperCase();
     setText('profile-hero-username', session.username);
     setText('profile-hero-handle', session.username);
     setText('profile-hero-email', session.email);
-    setText('profile-hero-avatar-initial', initial);
-    try{ const profileResponse=await CyberYardHubAPI.users.meProfile(); const p=profileResponse.profile; setText('profile-bio',p.bio||'No bio added yet.'); setText('profile-hero-username',p.username); setText('profile-hero-handle',p.username); if(p.avatarUrl){ const avatar=document.getElementById('profile-hero-avatar-initial'); if(avatar) avatar.textContent=p.username.charAt(0).toUpperCase(); } renderSocialProgress('profile-category-progress',p.categories||[]); renderSocialProgress('profile-difficulty-progress',p.difficulties||[]); }catch(_){ setText('profile-bio','No bio added yet.'); }
+    /* Start from the session copy so the navbar, sub-nav and profile card all
+       agree immediately, then let the profile fetch correct them. */
+    syncUserAvatar(session);
+    try{
+      const profileResponse = await CyberYardHubAPI.users.meProfile();
+      const p = profileResponse.profile;
+      setText('profile-bio', p.bio || 'No bio added yet.');
+      setText('profile-hero-username', p.username);
+      setText('profile-hero-handle', p.username);
+      syncUserAvatar({ username: p.username, profile: { avatarUrl: p.avatarUrl } });
+      renderSocialProgress('profile-category-progress', p.categories || []);
+      renderSocialProgress('profile-difficulty-progress', p.difficulties || []);
+    }catch(_){ setText('profile-bio','No bio added yet.'); }
 
     if(session.createdAt){
       const d = new Date(session.createdAt);
@@ -1098,12 +1117,55 @@
     if(!session) return;
     setText('account-subnav-username', session.username);
     setText('account-subnav-email', session.email);
-    setText('account-subnav-avatar', (session.username || '?').charAt(0).toUpperCase());
   }
 
   function syncFooterAccountState(session){
     document.querySelectorAll('[data-nav-guest-action]').forEach(el => { el.hidden = !!session; });
     document.querySelectorAll('[data-nav-authed-cta]').forEach(el => { el.hidden = !session; });
+  }
+
+  /* ---------- operator avatar ----------
+     The navbar, the account sub-nav, the mobile drawer and the profile card
+     all show the signed-in operator's own profile image when they have set
+     one, and their initial otherwise. GET /api/auth/me already carries
+     profile.avatarUrl, so this costs no extra request.
+
+     Every slot pairs the <img> with an initial behind it. A remote image
+     that 404s, is blocked, or is not an image fires `error`, which puts the
+     initial back — a bad avatar URL can never leave a blank circle in the
+     navbar. */
+  const AVATAR_SLOTS = [
+    { image: 'nav-avatar-image',            initial: 'nav-avatar-initial' },
+    { image: 'account-subnav-avatar-image', initial: 'account-subnav-avatar' },
+    { image: 'mm-avatar-image',             initial: 'mm-avatar-initial' },
+    { image: 'profile-hero-avatar-image',   initial: 'profile-hero-avatar-initial' }
+  ];
+
+  function safeAvatarUrl(value){
+    const raw = String(value || '').trim();
+    if(!raw) return '';
+    /* Only absolute http(s) or data/blob references. A javascript: or vbscript:
+       value in an avatar field must never reach an img src. */
+    if(/^https?:\/\//i.test(raw)) return raw;
+    if(/^data:image\//i.test(raw)) return raw;
+    return '';
+  }
+
+  function renderAvatarSlot(slot, url, fallbackInitial){
+    const image = document.getElementById(slot.image);
+    const initial = document.getElementById(slot.initial);
+    if(initial) initial.textContent = fallbackInitial;
+    if(!image) return;
+    if(!url){ image.hidden = true; image.removeAttribute('src'); return; }
+    image.onerror = () => { image.hidden = true; image.removeAttribute('src'); };
+    if(image.getAttribute('src') !== url) image.setAttribute('src', url);
+    image.hidden = false;
+  }
+
+  function syncUserAvatar(session){
+    const initial = (session?.username || '?').charAt(0).toUpperCase();
+    const url = safeAvatarUrl(session?.profile?.avatarUrl);
+    AVATAR_SLOTS.forEach(slot => renderAvatarSlot(slot, url, initial));
   }
 
   /* ---------- home range read-out (live) ----------
@@ -1397,6 +1459,8 @@ showView('badges');
   let currentLeaderboard = [];
   let selectedLeaderboardUserId = null;
   let selectedLeaderboardProfile = null;
+  let scoreboardQuery = '';
+  let scoreboardScoredOnly = false;
 
   function renderPodium(entries){
     const podium = entries.slice(0, 3);
@@ -1405,34 +1469,138 @@ showView('badges');
       return;
     }
     const [p1, p2, p3] = podium;
-    const card = (p) => `
-      <div class="lb-podium-card rank-${escapeHtml(String(p.rank ?? '').replace(/[^0-9]/g,''))}">
-        <div class="rank-badge">${p.rank}</div>
-        <div class="lb-avatar"><div class="lb-avatar-inner">${escapeHtml(p.username.charAt(0).toUpperCase())}</div></div>
-        <div class="lb-name">${escapeHtml(p.username)}</div>
-        <div class="lb-pts">${formatPoints(p.points)}</div>
-        <div class="lb-solved">${p.solved} solved</div>
-      </div>`;
-    document.getElementById('lb-podium').innerHTML = card(p2) + card(p1) + card(p3);
+    const card = (p, place) => `
+      <button type="button" class="lb-podium-card place-${place}" onclick="selectLeaderboardUser(${escapeHtml(JSON.stringify(p.id))})">
+        <span class="lb-podium-place" aria-hidden="true">${place}</span>
+        <span class="sr-only">Rank ${escapeHtml(String(p.rank))}</span>
+        <span class="lb-avatar"><span class="lb-avatar-inner">${escapeHtml(p.username.charAt(0).toUpperCase())}</span></span>
+        <span class="lb-name">${escapeHtml(p.username)}</span>
+        <span class="lb-pts">${escapeHtml(formatPoints(p.points))}<small>pts</small></span>
+        <span class="lb-podium-meta">
+          <span>${escapeHtml(String(p.solved ?? 0))} solved</span>
+          <span>Lv ${escapeHtml(String(p.level ?? 1))}</span>
+        </span>
+      </button>`;
+    document.getElementById('lb-podium').innerHTML = card(p2, 2) + card(p1, 1) + card(p3, 3);
   }
 
+  /* Ranks 1-3 live on the podium; the table covers rank 4 down. The
+     signed-in operator is marked in place rather than duplicated into a
+     pinned footer row, which used to be able to disagree with the rows. */
   function renderLeaderboardTable(entries){
+    const body = document.getElementById('lb-table-body');
+    if(!body) return;
     const rows = entries.slice(3);
-    const rowHtml = (p) => `
-      <div class="lb-row" role="button" tabindex="0" data-user-id="${escapeHtml(p.id)}" onclick="selectLeaderboardUser(${escapeHtml(JSON.stringify(p.id))})" onkeydown="if(event.key==='Enter' || event.key===' ') { event.preventDefault(); selectLeaderboardUser(${escapeHtml(JSON.stringify(p.id))}); }">
-        <span class="lb-rank">${p.rank}</span>
-        <div class="lb-player">
-          <div class="lb-avatar-sm">${escapeHtml(p.username.charAt(0).toUpperCase())}</div>
+    const visible = rows.filter(entry => {
+      if(scoreboardScoredOnly && Number(entry.solved || 0) <= 0 && Number(entry.points || 0) <= 0) return false;
+      if(!scoreboardQuery) return true;
+      return String(entry.username || '').toLowerCase().includes(scoreboardQuery);
+    });
+    const rowHtml = (p) => {
+      const mine = !!currentUser && p.id === currentUser.id;
+      return `
+      <div class="lb-row${mine ? ' is-you' : ''}" role="button" tabindex="0" data-user-id="${escapeHtml(p.id)}" aria-label="Rank ${escapeHtml(String(p.rank))}, ${escapeHtml(p.username)}, ${escapeHtml(formatPoints(p.points))} points" onclick="selectLeaderboardUser(${escapeHtml(JSON.stringify(p.id))})" onkeydown="if(event.key==='Enter' || event.key===' ') { event.preventDefault(); selectLeaderboardUser(${escapeHtml(JSON.stringify(p.id))}); }">
+        <span class="lb-rank">${escapeHtml(String(p.rank))}</span>
+        <span class="lb-player">
+          <span class="lb-avatar-sm">${escapeHtml(p.username.charAt(0).toUpperCase())}</span>
           <span class="lb-player-name">${escapeHtml(p.username)}</span>
-        </div>
-        <span class="lb-pts-cell">${formatPoints(p.points)}</span>
-        <span class="lb-solved-cell">${p.solved}</span>
-        <span class="lb-xp-cell">${formatPoints(p.xp)}</span>
-        <span class="lb-level-cell">${p.level}</span>
-        <span class="lb-firstblood-cell">${p.firstBloods}</span>
-        <span class="lb-streak-cell">${p.currentStreak}d</span>
+          ${mine ? '<span class="lb-you-tag">You</span>' : ''}
+        </span>
+        <span class="lb-pts-cell">${escapeHtml(formatPoints(p.points))}</span>
+        <span class="lb-solved-cell">${escapeHtml(String(p.solved ?? 0))}</span>
+        <span class="lb-xp-cell">${escapeHtml(formatPoints(p.xp || 0))}</span>
+        <span class="lb-level-cell">${escapeHtml(String(p.level ?? 1))}</span>
+        <span class="lb-firstblood-cell">${escapeHtml(String(p.firstBloods ?? 0))}</span>
+        <span class="lb-streak-cell">${escapeHtml(String(p.currentStreak ?? 0))}d</span>
       </div>`;
-    document.getElementById('lb-table-body').innerHTML = rows.map(rowHtml).join('');
+    };
+    body.innerHTML = visible.map(rowHtml).join('');
+
+    const empty = document.getElementById('lb-filter-empty');
+    if(empty) empty.classList.toggle('hidden', visible.length > 0 || rows.length === 0);
+
+    /* If a filter hides the operator's own row, say so rather than letting
+       them think they fell off the board. */
+    const mine = currentUser ? rows.find(entry => entry.id === currentUser.id) : null;
+    const mineHidden = !!mine && !visible.includes(mine);
+    const outside = document.getElementById('lb-you-outside');
+    if(outside){
+      outside.classList.toggle('hidden', !mineHidden);
+      if(mineHidden) outside.textContent = `Your row (rank #${mine.rank}) is hidden by the current filter.`;
+    }
+  }
+
+  /* Filters apply to the loaded page only. GET /api/leaderboard caps a page
+     at 100 rows and offers no server-side search, so the field says "loaded
+     rows" and the standings header states the cap. */
+  function onScoreboardFilter(){
+    const input = document.getElementById('lb-board-search');
+    scoreboardQuery = (input ? input.value : '').trim().toLowerCase();
+    renderLeaderboardTable(currentLeaderboard);
+  }
+
+  function toggleScoreboardSolvedOnly(){
+    scoreboardScoredOnly = !scoreboardScoredOnly;
+    const button = document.getElementById('lb-solved-only');
+    if(button){
+      button.setAttribute('aria-pressed', String(scoreboardScoredOnly));
+      button.classList.toggle('is-active', scoreboardScoredOnly);
+    }
+    renderLeaderboardTable(currentLeaderboard);
+  }
+
+  function resetScoreboardFilters(){
+    scoreboardQuery = '';
+    scoreboardScoredOnly = false;
+    const input = document.getElementById('lb-board-search');
+    if(input) input.value = '';
+    const button = document.getElementById('lb-solved-only');
+    if(button){
+      button.setAttribute('aria-pressed','false');
+      button.classList.remove('is-active');
+    }
+  }
+
+  /* "Your position" strip. Derived from the same rows as the table; falls
+     back to the account's own stats endpoint when the operator is outside
+     the loaded page, and says so rather than showing a blank tile. */
+  function renderScoreboardStanding(){
+    const me = currentUser
+      ? currentLeaderboard.find(entry => entry.id === currentUser.id)
+        || currentLeaderboard.find(entry => entry.username === currentUser.username)
+      : null;
+    if(me){
+      setText('lb-you-rank', `#${me.rank}`);
+      setText('lb-you-rank-of', `of ${formatPoints(currentLeaderboard.length)} loaded`);
+      setText('lb-you-points', formatPoints(me.points));
+      setText('lb-you-solved', String(me.solved ?? 0));
+      setText('lb-you-xp', formatPoints(me.xp || 0));
+      setText('lb-you-level', String(me.level ?? 1));
+      setText('lb-you-first-bloods', String(me.firstBloods ?? 0));
+      setText('lb-you-streak', `${me.currentStreak ?? 0}d`);
+      const above = currentLeaderboard.find(entry => Number(entry.rank) === Number(me.rank) - 1);
+      setText('lb-you-gap', above ? `${formatPoints(Number(above.points) - Number(me.points))} pts to #${above.rank}` : 'Leading the board');
+      setText('lb-standing-note', 'Ranked by total points.');
+      return;
+    }
+    setText('lb-you-rank', '—');
+    setText('lb-you-rank-of', 'outside the loaded page');
+    setText('lb-you-points', '—');
+    setText('lb-you-solved', '—');
+    setText('lb-you-gap', 'unranked on the loaded page');
+    setText('lb-standing-note', 'You are not in the loaded standings; showing your own stats.');
+    return loadUserStats()
+      .then(stats => {
+        setText('lb-you-rank', `#${stats.rank}`);
+        setText('lb-you-points', formatPoints(stats.points));
+        setText('lb-you-solved', String(stats.solved ?? 0));
+        setText('lb-you-xp', formatPoints(stats.xp || 0));
+        setText('lb-you-level', String(stats.level || 1));
+        setText('lb-you-first-bloods', String(stats.firstBloodCount || 0));
+        setText('lb-you-streak', `${stats.currentStreak ?? 0}d`);
+        setText('lb-you-rank-of', `of ${formatPoints(currentLeaderboard.length)} loaded`);
+      })
+      .catch(() => { /* the strip simply stays neutral */ });
   }
 
   async function selectLeaderboardUser(userId){
@@ -1525,51 +1693,29 @@ showView('badges');
     window.scrollTo({top:0, behavior:'auto'});
     syncAccountSubnav(session);
     renderScoreboardMode('solo');
+    resetScoreboardFilters();
     document.getElementById('lb-selected-user')?.classList.add('hidden');
 
     try{
-      /* 100 is the server's hard cap for a leaderboard page, so this is the
-         whole board rather than an arbitrary slice. */
+      /* 100 is the server's hard per-page cap, so this is the whole board the
+         API is willing to hand over in one response. The standings header
+         states that cap rather than implying a whole-range count. */
       const response = await CyberYardHubAPI.leaderboard.list({ limit: 100, offset: 0 });
-      currentLeaderboard = response.leaderboard || [];
+      currentLeaderboard = Array.isArray(response?.leaderboard) ? response.leaderboard : [];
       renderPodium(currentLeaderboard);
       renderLeaderboardTable(currentLeaderboard);
+      await renderScoreboardStanding();
       setText('lb-standings-note', currentLeaderboard.length
-        ? `${formatPoints(currentLeaderboard.length)} operator${currentLeaderboard.length === 1 ? '' : 's'} ranked by total points.`
+        ? `Top ${formatPoints(currentLeaderboard.length)} by total points.${currentLeaderboard.length >= 100 ? ' The API caps a page at 100.' : ''}`
         : 'No operator has scored yet.');
-
-      const me = currentLeaderboard.find(entry => entry.id === session.id)
-        || currentLeaderboard.find(entry => entry.username === session.username);
-      const initial = (session.username || '?').charAt(0).toUpperCase();
-      setText('lb-you-username', session.username);
-      setText('lb-you-avatar', initial);
-      if(me){
-        setText('lb-you-rank', `#${me.rank}`);
-        setText('lb-you-points', formatPoints(me.points));
-        setText('lb-you-solved', String(me.solved));
-        setText('lb-you-xp', formatPoints(me.xp));
-        setText('lb-you-level', String(me.level));
-        setText('lb-you-first-bloods', String(me.firstBloods));
-        setText('lb-you-streak', `${me.currentStreak}d`);
-      }else{
-        const stats = await loadUserStats();
-        setText('lb-you-rank', `#${stats.rank}`);
-        setText('lb-you-points', formatPoints(stats.points));
-        setText('lb-you-solved', String(stats.solved));
-        setText('lb-you-xp', formatPoints(stats.xp || 0));
-        setText('lb-you-level', String(stats.level || 1));
-        setText('lb-you-first-bloods', String(stats.firstBloodCount || 0));
-        setText('lb-you-streak', `${stats.currentStreak}d`);
-      }
-      document.getElementById('lb-ellipsis')?.classList.toggle('hidden', currentLeaderboard.length === 0);
-      document.getElementById('lb-you-row')?.classList.remove('hidden');
     }catch(e){
       if(isUnauthorizedError(e)){ redirectToLoginFromNav('view the scoreboard'); return; }
       document.getElementById('lb-podium').innerHTML = '<div class="board-empty">The scoreboard could not be loaded right now.</div>';
       document.getElementById('lb-table-body').innerHTML = '';
-      document.getElementById('lb-you-row')?.classList.add('hidden');
+      setText('lb-standings-note', 'Standings are unavailable.');
     }
   }
+
   /* ---------- secure operator console: URL-gated management workspace ---------- */
   const OPS_TABS = Object.freeze([
     { id: 'overview', label: 'Overview' },
@@ -3332,13 +3478,11 @@ setText('cd-title', 'Loading…');
     syncFooterAccountState(session);
     syncAccountSubnav(session);
     if(session){
-      const initial = (session.username || '?').charAt(0).toUpperCase();
-      document.getElementById('nav-avatar-initial').textContent = initial;
       document.getElementById('ad-username').textContent = session.username;
       document.getElementById('ad-email').textContent = session.email;
-      document.getElementById('mm-avatar-initial').textContent = initial;
       document.getElementById('mm-username').textContent = session.username;
       document.getElementById('mm-email').textContent = session.email;
+      syncUserAvatar(session);
     }
     await applySessionPreferences(session);
     updateActiveNav();

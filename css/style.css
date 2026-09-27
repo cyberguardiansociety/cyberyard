@@ -6910,3 +6910,320 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
   .home-pulse-fill,
   .profile-xp-fill{ transition:none; }
 }
+
+/* =====================================================================
+   SCOREBOARD — rebuilt again from scratch
+   Structure: a "your position" strip computed from the same rows as the
+   table, a three-place podium, then the standings with a client-side
+   filter over the loaded page and a sticky operator inspector.
+
+   Everything numeric uses tabular figures so columns of points line up and
+   a changing value does not shift the layout.
+   ===================================================================== */
+#view-leaderboard .dash-main{ padding-bottom:80px; }
+#view-leaderboard .lb-table-head,
+#view-leaderboard .lb-row,
+#view-leaderboard .board-standing-value,
+#view-leaderboard .board-standing-sub{
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---------- your position ---------- */
+.board-standing{
+  margin-bottom:18px;
+  padding:clamp(18px,2.2vw,24px);
+  border:1px solid var(--clay-border);
+  border-radius:var(--clay-radius-xl);
+  background:
+    radial-gradient(80% 120% at 0% 0%, rgba(84,223,255,.06), transparent 62%),
+    var(--clay-surface);
+  box-shadow:var(--clay-shadow);
+}
+.board-standing-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.board-standing-head h2{ font-size:16px; letter-spacing:-.02em; }
+.board-standing-note{ color:var(--muted-2); font-size:11.5px; }
+.board-standing-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:1px;
+  background:var(--clay-border);
+  border:1px solid var(--clay-border);
+  border-radius:var(--clay-radius-md);
+  overflow:hidden;
+}
+.board-standing-tile{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding:15px 14px;
+  background:var(--clay-surface-raised);
+}
+.board-standing-label{
+  color:var(--muted-2);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1.1px;
+  text-transform:uppercase;
+}
+.board-standing-value{
+  font-family:'Chakra Petch',sans-serif;
+  font-size:clamp(21px,2.3vw,27px);
+  font-weight:600;
+  line-height:1;
+  letter-spacing:-.6px;
+  color:#f2eeff;
+}
+.board-standing-sub{
+  color:var(--muted-2);
+  font-size:10.5px;
+  line-height:1.4;
+}
+
+/* ---------- podium ---------- */
+.board-podium{ align-items:end; }
+.lb-podium-card{
+  position:relative;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  padding:20px 16px 18px;
+  border:1px solid var(--clay-border);
+  border-radius:var(--clay-radius-lg);
+  background:var(--clay-surface);
+  box-shadow:var(--clay-shadow);
+  text-align:center;
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.lb-podium-card:hover{ transform:translateY(-3px); border-color:var(--clay-border-strong); box-shadow:var(--clay-shadow-hover); }
+.lb-podium-place{
+  position:absolute;
+  top:-13px;
+  left:50%;
+  transform:translateX(-50%);
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  border:1px solid var(--clay-border-strong);
+  background:var(--clay-surface-raised);
+  box-shadow:0 0 0 5px rgba(168,117,255,.07), var(--clay-shadow);
+  font-family:'Chakra Petch',sans-serif;
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--muted);
+}
+.lb-podium-card.place-1{
+  padding-top:28px;
+  border-color:rgba(84,223,255,.3);
+  background:
+    radial-gradient(70% 60% at 50% 0%, rgba(84,223,255,.1), transparent 66%),
+    var(--clay-surface-raised);
+}
+.lb-podium-card.place-1 .lb-podium-place{
+  width:34px; height:34px; top:-15px;
+  border-color:var(--cyh-cyan);
+  background:linear-gradient(140deg,rgba(84,223,255,.24),rgba(161,92,247,.24));
+  color:#eafcff;
+  box-shadow:0 0 0 5px rgba(84,223,255,.1), 0 0 22px rgba(84,223,255,.28);
+}
+.lb-podium-card .lb-avatar{ width:52px; height:52px; }
+.lb-podium-card.place-1 .lb-avatar{ width:62px; height:62px; }
+.lb-podium-card .lb-name{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:14px;
+  font-weight:650;
+  color:var(--text);
+}
+.lb-podium-card .lb-pts{
+  display:inline-flex;
+  align-items:baseline;
+  gap:5px;
+  font-family:'Chakra Petch',sans-serif;
+  font-size:clamp(19px,2vw,24px);
+  font-weight:600;
+  letter-spacing:-.5px;
+  color:#f2eeff;
+  font-variant-numeric:tabular-nums;
+}
+.lb-podium-card .lb-pts small{ font-size:10px; letter-spacing:1.1px; text-transform:uppercase; color:var(--muted-2); }
+.lb-podium-meta{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+  color:var(--muted-2);
+  font-size:10.5px;
+}
+.lb-podium-meta span{ padding:3px 8px; border-radius:var(--clay-radius-pill); background:var(--clay-surface-soft); }
+
+/* ---------- toolbar ---------- */
+.board-toolbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  padding:14px 22px;
+  border-bottom:1px solid var(--clay-border);
+  background:var(--clay-surface-soft);
+}
+.board-search{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1 1 200px;
+  min-width:0;
+  min-height:40px;
+  padding:0 12px;
+  border:1px solid var(--clay-border);
+  border-radius:var(--clay-radius-pill);
+  background:var(--clay-surface-raised);
+  transition:border-color .2s ease,box-shadow .2s ease;
+}
+.board-search:focus-within{ border-color:var(--clay-border-strong); box-shadow:0 0 0 3px var(--clay-cyan-soft); }
+.board-search svg{ width:15px; height:15px; flex-shrink:0; color:var(--muted-2); }
+.board-search input{
+  flex:1 1 auto;
+  min-width:0;
+  min-height:38px;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  font-size:12.5px;
+}
+.board-search input:focus{ outline:none; }
+.board-search ::placeholder{ color:var(--placeholder); }
+.board-toggle{
+  min-height:40px;
+  padding:8px 15px;
+  border:1px solid var(--clay-border);
+  border-radius:var(--clay-radius-pill);
+  background:transparent;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+  white-space:nowrap;
+  transition:color .18s ease,background .18s ease,border-color .18s ease;
+}
+.board-toggle:hover{ color:var(--text); background:var(--clay-accent-soft); }
+.board-toggle.is-active{
+  color:var(--text);
+  background:var(--clay-cyan-soft);
+  border-color:rgba(84,223,255,.3);
+}
+
+/* ---------- rows ---------- */
+#view-leaderboard .lb-row.is-you{
+  background:var(--clay-cyan-soft);
+  box-shadow:inset 3px 0 0 var(--cyh-cyan);
+}
+#view-leaderboard .lb-row.is-you .lb-player-name{ color:var(--text); }
+.lb-you-tag{
+  flex-shrink:0;
+  margin-left:2px;
+  padding:2px 8px;
+  border-radius:var(--clay-radius-pill);
+  background:rgba(84,223,255,.16);
+  color:var(--cyh-cyan);
+  font-size:9.5px;
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.board-filter-empty,
+.board-you-outside{
+  margin:0;
+  padding:16px 22px;
+  color:var(--muted-2);
+  font-size:12px;
+}
+.board-you-outside{ color:var(--cyh-cyan); }
+.board-filter-empty[hidden],
+.board-you-outside[hidden]{ display:none!important; }
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+  .board-standing-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width:900px){
+  .board-standing-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .board-toolbar{ padding:12px 16px; }
+  .board-toolbar .board-search{ flex-basis:100%; }
+  .board-toggle{ width:100%; }
+}
+@media (max-width:520px){
+  .board-standing-grid{ grid-template-columns:1fr; }
+}
+
+/* =====================================================================
+   OPERATOR AVATAR IMAGE
+   The <img> sits in front of an initial in the same slot, so an avatar that
+   fails to load (bad URL, blocked request, non-image response) can never
+   leave an empty circle in the navbar. `hidden` is the only switch; there is
+   no state where both are invisible.
+   ===================================================================== */
+.avatar-image{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:inherit;
+  display:block;
+}
+.avatar-image[hidden]{ display:none!important; }
+.avatar-circle-sm,
+.pc-xl,
+.profile-avatar-xl,
+.account-subnav-avatar{ position:relative; overflow:hidden; }
+.account-subnav-avatar{ display:grid; place-items:center; }
+.pc-xl{ display:grid; place-items:center; }
+/* The initial stays in the DOM behind the image. No display juggling: the
+   image is absolutely positioned over it, and `onerror` in js/script.js
+   simply un-hides the initial underneath. */
+
+/* ---------- sub-nav grouping ----------
+   Eleven destinations in one flat row was hard to scan. Split into the four
+   things you do on a run (challenges, submit, scoreboard, teams) and the
+   things that are about you (overview, events, community, badges, activity,
+   profile, settings), with a rule between them. */
+.account-subnav-links{ align-items:stretch; }
+.account-subnav-group{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.account-subnav-group-label{
+  padding:0 8px 0 4px;
+  color:var(--muted-2);
+  font-size:9.5px;
+  font-weight:700;
+  letter-spacing:1.3px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.account-subnav-rule{
+  width:1px;
+  align-self:stretch;
+  margin:6px 8px;
+  background:var(--clay-border);
+}
+@media (max-width:640px){
+  .account-subnav-group-label{ display:none; }
+  .account-subnav-rule{ margin:2px 6px; }
+}

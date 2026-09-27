@@ -15,8 +15,16 @@
      which is what made login and registration look permanently broken. The
      extra sources are loopback-only on any port: a local-first platform only
      ever talks to its own machine, and in production the API is same-origin,
-     where 'self' alone is all that applies. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+     where 'self' alone is all that applies.
+
+     img-src allows remote schemes only so an operator can set their own
+     profile avatar to a hosted image and see it in the navbar. That is the
+     only place a remote image is ever loaded: the signed-in user's own
+     avatar, from a URL they supplied themselves. Every other identity in the
+     product (community posts, operators on the scoreboard, followers) is
+     still rendered as initials, so no third-party host is ever contacted on
+     another user's behalf. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https: http:; connect-src 'self' http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="description" content="CyberYardHub — capture the flag, complete missions, learn by doing.">
 <title>CyberYardHub — Secure Today. Stronger Tomorrow.</title>
@@ -50,7 +58,9 @@
   <div class="nav-actions hidden" id="nav-user">
     <div class="avatar-menu" id="avatar-menu">
       <button class="avatar-btn" type="button" onclick="toggleAvatarMenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
-        <span class="avatar-ring-sm"><span class="avatar-circle-sm" id="nav-avatar-initial">O</span></span>
+        <span class="avatar-ring-sm">
+          <span class="avatar-circle-sm"><img class="avatar-image" id="nav-avatar-image" alt="" hidden><span id="nav-avatar-initial">O</span></span>
+        </span>
       </button>
       <div class="avatar-dropdown" id="avatar-dropdown" role="menu" aria-label="Account menu">
         <div class="ad-header">
@@ -96,7 +106,7 @@
     </div>
     <div class="mm-auth hidden" id="mm-user">
       <div class="mm-user-info">
-        <div class="avatar-ring-sm"><div class="avatar-circle-sm" id="mm-avatar-initial">O</div></div>
+        <div class="avatar-ring-sm"><div class="avatar-circle-sm"><img class="avatar-image" id="mm-avatar-image" alt="" hidden><div id="mm-avatar-initial">O</div></div></div>
         <div class="umeta">
           <div class="uname" id="mm-username">operator</div>
           <div class="uemail" id="mm-email">you@domain.com</div>
@@ -124,54 +134,61 @@
   <nav class="account-subnav" id="account-subnav" aria-label="Account sections" hidden>
     <div class="account-subnav-inner">
       <div class="account-subnav-links">
-        <a class="account-subnav-link" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-          <span>Overview</span>
-        </a>
-        <a class="account-subnav-link" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-          <span>Challenges</span>
-        </a>
-        <a class="account-subnav-link" data-nav="submit-flag" href="#" onclick="navGo('submit-flag'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 21V4M5 5h10l-1.5 3L15 11H5"/></svg>
-          <span>Submit Flag</span>
-        </a>
-        <a class="account-subnav-link" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-          <span>Scoreboard</span>
-        </a>
-        <a class="account-subnav-link" data-nav="teams" href="#" onclick="navGo('teams'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 5.5a3 3 0 0 1 0 5M18 20a5.6 5.6 0 0 0-2.2-4.4"/></svg>
-          <span>Teams</span>
-        </a>
-        <a class="account-subnav-link" data-nav="events" href="#" onclick="navGo('events'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-          <span>Events</span>
-        </a>
-        <a class="account-subnav-link" data-nav="community" href="#" onclick="navGo('community'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8"/></svg>
-          <span>Community</span>
-        </a>
-        <a class="account-subnav-link" data-nav="badges" href="#" onclick="navGo('badges'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5"/></svg>
-          <span>Badges</span>
-        </a>
-        <a class="account-subnav-link" data-nav="activity" href="#" onclick="navGo('activity'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 16l3-4 3 2 5-7"/></svg>
-          <span>Activity</span>
-        </a>
-        <a class="account-subnav-link" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-          <span>Profile</span>
-        </a>
-        <a class="account-subnav-link" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-          <span>Settings</span>
-        </a>
+        <div class="account-subnav-group" aria-label="Play">
+          <span class="account-subnav-group-label">Play</span>
+          <a class="account-subnav-link" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
+            <span>Challenges</span>
+          </a>
+          <a class="account-subnav-link" data-nav="submit-flag" href="#" onclick="navGo('submit-flag'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 21V4M5 5h10l-1.5 3L15 11H5"/></svg>
+            <span>Submit Flag</span>
+          </a>
+          <a class="account-subnav-link" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
+            <span>Scoreboard</span>
+          </a>
+          <a class="account-subnav-link" data-nav="teams" href="#" onclick="navGo('teams'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 5.5a3 3 0 0 1 0 5M18 20a5.6 5.6 0 0 0-2.2-4.4"/></svg>
+            <span>Teams</span>
+          </a>
+        </div>
+        <span class="account-subnav-rule" aria-hidden="true"></span>
+        <div class="account-subnav-group" aria-label="Account">
+          <span class="account-subnav-group-label">Account</span>
+          <a class="account-subnav-link" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            <span>Overview</span>
+          </a>
+          <a class="account-subnav-link" data-nav="events" href="#" onclick="navGo('events'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span>Events</span>
+          </a>
+          <a class="account-subnav-link" data-nav="community" href="#" onclick="navGo('community'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8"/></svg>
+            <span>Community</span>
+          </a>
+          <a class="account-subnav-link" data-nav="badges" href="#" onclick="navGo('badges'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5"/></svg>
+            <span>Badges</span>
+          </a>
+          <a class="account-subnav-link" data-nav="activity" href="#" onclick="navGo('activity'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 16l3-4 3 2 5-7"/></svg>
+            <span>Activity</span>
+          </a>
+          <a class="account-subnav-link" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
+            <span>Profile</span>
+          </a>
+          <a class="account-subnav-link" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
+            <span>Settings</span>
+          </a>
+        </div>
       </div>
       <div class="account-subnav-tail">
         <span class="account-subnav-user">
-          <span class="account-subnav-avatar" id="account-subnav-avatar" aria-hidden="true">O</span>
+          <span class="account-subnav-avatar"><img class="avatar-image" id="account-subnav-avatar-image" alt="" hidden><span id="account-subnav-avatar" aria-hidden="true">O</span></span>
           <span class="account-subnav-meta">
             <b id="account-subnav-username">operator</b>
             <small id="account-subnav-email">you@domain.com</small>
@@ -1107,7 +1124,7 @@
         <!-- identity -->
         <section class="profile-card" aria-labelledby="profile-hero-username">
           <div class="profile-card-identity">
-            <div class="profile-avatar-xl"><span class="pc-xl" id="profile-hero-avatar-initial">O</span></div>
+            <div class="profile-avatar-xl"><span class="pc-xl"><img class="avatar-image" id="profile-hero-avatar-image" alt="" hidden><span class="pc-xl-initial" id="profile-hero-avatar-initial">O</span></span></div>
             <div class="profile-card-names">
               <span class="profile-card-status"><i aria-hidden="true"></i>Active operator</span>
               <h2 id="profile-hero-username">operator</h2>
@@ -1275,33 +1292,73 @@
         </div>
 
         <div id="lb-solo-content" class="board">
+          <!-- Where the signed-in operator actually sits, plus the gap to the
+               operator directly above. Every figure comes from the same rows
+               as the table below, so the two can never disagree. -->
+          <section class="board-standing" aria-labelledby="lb-standing-heading">
+            <div class="board-standing-head">
+              <h2 id="lb-standing-heading">Your position</h2>
+              <span class="board-standing-note" id="lb-standing-note">Ranked by total points.</span>
+            </div>
+            <div class="board-standing-grid">
+              <div class="board-standing-tile">
+                <span class="board-standing-label">Rank</span>
+                <strong class="board-standing-value" id="lb-you-rank">&mdash;</strong>
+                <small class="board-standing-sub" id="lb-you-rank-of">&mdash;</small>
+              </div>
+              <div class="board-standing-tile">
+                <span class="board-standing-label">Points</span>
+                <strong class="board-standing-value" id="lb-you-points">0</strong>
+                <small class="board-standing-sub" id="lb-you-gap">&mdash;</small>
+              </div>
+              <div class="board-standing-tile">
+                <span class="board-standing-label">Solved</span>
+                <strong class="board-standing-value" id="lb-you-solved">0</strong>
+                <small class="board-standing-sub">valid flags</small>
+              </div>
+              <div class="board-standing-tile">
+                <span class="board-standing-label">Streak</span>
+                <strong class="board-standing-value" id="lb-you-streak">0</strong>
+                <small class="board-standing-sub">consecutive days</small>
+              </div>
+              <div class="board-standing-tile">
+                <span class="board-standing-label">Level</span>
+                <strong class="board-standing-value" id="lb-you-level">1</strong>
+                <small class="board-standing-sub"><span id="lb-you-xp">0</span> XP</small>
+              </div>
+              <div class="board-standing-tile">
+                <span class="board-standing-label">First blood</span>
+                <strong class="board-standing-value" id="lb-you-first-bloods">0</strong>
+                <small class="board-standing-sub">earliest solves</small>
+              </div>
+            </div>
+          </section>
+
           <div class="board-podium" id="lb-podium" aria-label="Top three operators"></div>
 
           <div class="board-layout">
             <section class="board-table-panel" aria-labelledby="lb-standings-heading">
               <header class="board-table-head">
-                <h2 id="lb-standings-heading">Full standings</h2>
+                <h2 id="lb-standings-heading">Standings</h2>
                 <p id="lb-standings-note">Ranked by total points.</p>
               </header>
+              <!-- Filters the loaded page only: GET /api/leaderboard caps a
+                   page at 100 rows and has no server-side search, so the
+                   label above the table states the cap rather than implying
+                   a whole-range search. -->
+              <div class="board-toolbar">
+                <div class="board-search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                  <input type="search" id="lb-board-search" aria-label="Filter the loaded standings by operator name" placeholder="Filter loaded rows&hellip;" autocomplete="off" oninput="onScoreboardFilter()">
+                </div>
+                <button class="board-toggle" type="button" id="lb-solved-only" aria-pressed="false" onclick="toggleScoreboardSolvedOnly()">Scored runs only</button>
+              </div>
               <div class="lb-table-head">
                 <span>RANK</span><span>PLAYER</span><span>POINTS</span><span>SOLVED</span><span>XP</span><span>LEVEL</span><span>FIRST BLOOD</span><span>STREAK</span>
               </div>
               <div id="lb-table-body"></div>
-              <div class="lb-ellipsis hidden" id="lb-ellipsis">&hellip;</div>
-              <div class="lb-row lb-row-you hidden" id="lb-you-row">
-                <span class="lb-rank" id="lb-you-rank">&mdash;</span>
-                <div class="lb-player">
-                  <div class="lb-avatar-sm" id="lb-you-avatar">O</div>
-                  <span class="lb-player-name" id="lb-you-username">operator</span>
-                  <span class="p-tag accent lb-you-tag">You</span>
-                </div>
-                <span class="lb-pts-cell" id="lb-you-points">0</span>
-                <span class="lb-solved-cell" id="lb-you-solved">0</span>
-                <span class="lb-xp-cell" id="lb-you-xp">0</span>
-                <span class="lb-level-cell" id="lb-you-level">1</span>
-                <span class="lb-firstblood-cell" id="lb-you-first-bloods">0</span>
-                <span class="lb-streak-cell" id="lb-you-streak">0</span>
-              </div>
+              <p class="board-filter-empty hidden" id="lb-filter-empty">No loaded operator matches that filter.</p>
+              <p class="board-you-outside hidden" id="lb-you-outside"></p>
             </section>
 
             <aside class="lb-selected-user hidden" id="lb-selected-user" aria-labelledby="lb-selected-username">
@@ -1335,12 +1392,11 @@
             <h2 id="team-scoreboard-heading">Team standings</h2>
             <p>Best solve per challenge counts once for the whole crew.</p>
           </header>
-          <div id="team-scoreboard-list"><div class="challenge-extra-empty">Choose Teams to load team standings.</div></div>
+          <div id="team-scoreboard-list"><div class="board-empty">Choose Teams to load team standings.</div></div>
         </section>
       </div>
     </div>
   </section>
-
 
   <!-- ============ EVENTS ============ -->
   <section id="view-events" class="view">
