@@ -7128,17 +7128,23 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
 
    One token, applied everywhere, so a change to the header's height is a
    one-line fix instead of a hunt through per-page padding.
+
+   The value must be the header's bottom edge PLUS a breathing gap, not equal
+   to it. Measured in headless Chrome at 1440x900, the floating pill spans
+   y=12..92, so a clearance of exactly 92px puts the first line of content
+   flush against the navbar's lower border — which reads as "hidden behind
+   it". 116px leaves 24px of visible air.
    ===================================================================== */
-:root{ --header-clear: 92px; }
+:root{ --header-clear: 116px; }
 
 /* Authenticated shell: the first child is the page title, with no inner
    top padding of its own, so this is the only thing keeping it clear. */
 .view:not(#view-landing) .dash-main{ padding-top:var(--header-clear); }
 
 /* Landing: the hero carries its own generous top padding, so the shell
-   needs the clearance but not the full value. Still ~50px tighter than the
-   pre-redesign 86px + 92px stack. */
-#view-landing .home-minimal-shell{ padding-top:84px; }
+   needs the clearance minus that, landing 32px tighter than the
+   authenticated shell while still clearing the pill. */
+#view-landing .home-minimal-shell{ padding-top:calc(var(--header-clear) - 32px); }
 
 /* Public pages (about, rules, teams, submit flag) already use a clamp whose
    floor is 92px; pin it to the token so the two can never drift. */
