@@ -18,11 +18,11 @@
   }
 
   function cyhPrepareReveal(root=document){
-    const selectors=['.panel-block','.stat-card','.chal-card','.community-post','.phase8-badge-card','.admin-challenge-row','.lb-row','.home-category-card','.home-challenge-card','.home-leaderboard-card','.home-final-cta','.qa-btn','.settings-card'];
+    const selectors=['.panel-block','.stat-card','.chal-card','.community-post','.phase8-badge-card','.admin-challenge-row','.lb-row','.home-glance-card','.home-os-card','.home-loop-body','.home-live-card','.profile-card','.profile-figure','.profile-panel','.flagdesk-console','.board-table-panel','.board-podium','.home-final-cta','.qa-btn','.settings-card'];
     const selectorText=selectors.join(',');
     if(root.matches?.(selectorText)) root.classList.add('cyh-reveal');
     root.querySelectorAll?.(selectorText).forEach(el => el.classList.add('cyh-reveal'));
-    root.querySelectorAll?.('.stat-cards,.home-category-grid,.home-challenge-grid,.achv-grid,.admin-challenge-list,.community-posts').forEach(el => el.classList.add('cyh-stagger'));
+    root.querySelectorAll?.('.stat-cards,.home-live-grid,.home-glance-grid,.home-loop,.home-os-grid,.home-pulse-board,.achv-grid,.admin-challenge-list,.community-posts,.board-podium').forEach(el => el.classList.add('cyh-stagger'));
     cyhReveal(root);
   }
 
@@ -56,7 +56,7 @@
   }
 
   function cyhInstallValueObserver(){
-    const targets='.sc-value,.home-stat strong,.lb-pts-cell,.home-lb-points,.lb-selected-points';
+    const targets='.sc-value,.lb-pts-cell,.home-lb-points,.lb-selected-points,.home-live-value,.home-pulse-points,.home-pulse-facts dd,.profile-figure-value';
     document.querySelectorAll(targets).forEach(el=>{el.dataset.cyhLastValue=el.textContent.trim();});
     const observer=new MutationObserver(mutations=>mutations.forEach(m=>{
       const el=m.target?.nodeType===1?m.target:m.target?.parentElement;
@@ -105,12 +105,12 @@
   const PRIMARY_NAV_ITEMS = Object.freeze(['home', 'about', 'rules', 'teams', 'challenges', 'leaderboard', 'submit-flag']);
   const GUEST_ALLOWED_VIEWS = new Set([
     'landing', 'home', 'about', 'rules',
-    'login', 'signup', 'forgot', 'reset-password', 'verify-email'
+    'login', 'signup', 'verify-email'
   ]);
 
   function normalizeViewName(name){
     const value = String(name || 'landing').toLowerCase();
-    return value === 'home' ? 'landing' : value === 'reset' ? 'reset-password' : value;
+    return value === 'home' ? 'landing' : value;
   }
 
   function isViewAllowed(view){
@@ -191,6 +191,7 @@
       closeAvatarMenu();
       currentNav = 'home';
       updateActiveNav();
+      syncAccountSubnav(null);
       showLandingNotice('Sign in to continue to that space.');
       const landing = document.getElementById('view-landing');
       if(landing){
@@ -204,7 +205,7 @@
       return false;
     }
     const alreadyActive = activeViewName === normalized && view.classList.contains('active');
-    if(normalized === 'landing') clearLandingNotice();
+    if(normalized === 'landing'){ clearLandingNotice(); void refreshHomeLiveStats(); }
     if(alreadyActive){
       requestAnimationFrame(()=>{cyhPrepareReveal(view);cyhAnimateProgress(view);});
       return false;
@@ -213,6 +214,7 @@
     view.classList.add('active');
     activeViewName = normalized;
     cyhPageEnter(view);
+    syncAccountSubnav(currentUser);
     requestAnimationFrame(()=>{cyhPrepareReveal(view);cyhAnimateProgress(view);});
     return true;
   }
@@ -244,17 +246,12 @@
 
   /* ---------- main navigation system ---------- */
   let currentNav = 'home';
-  let notificationReadFilter = 'all';
   // Monotonic request sequence counters: guards against out-of-order async
   // responses clobbering newer data (e.g. fast pagination clicks).
-  let notificationSeq = 0;
   let activitySeq = 0;
   let communitySeq = 0;
-  let notificationOffset = 0;
-  const notificationPageSize = 20;
   let activityOffset = 0;
   const activityPageSize = 20;
-  let notificationPollTimer = null;
 
   function updateActiveNav(){
     document.querySelectorAll('[data-nav]').forEach(el => {
@@ -315,9 +312,6 @@
       case 'events':
         void goToEvents();
         break;
-      case 'notifications':
-        void goToNotifications();
-        break;
       case 'activity':
         void goToActivity();
         break;
@@ -326,8 +320,6 @@
         break;
       case 'login':
       case 'signup':
-      case 'forgot':
-      case 'reset-password':
       case 'verify-email':
         currentNav = null; updateActiveNav(); goTo(name);
         break;
@@ -637,9 +629,10 @@
     try{
       const data = await CyberYardHubAPI.auth.login({ email, password: pass, rememberMe });
       currentUser = data.user;
-      showAlert('login', 'success', `Welcome back, ${data.user.username}. Opening your dashboard…`);
+      /* No "signed in successfully" banner: the dashboard that replaces this
+         form is the confirmation. A toast here would only repeat it. */
       await refreshNavState();
-      setTimeout(() => goToDashboard(), 500);
+      goToDashboard();
     }catch(e){
       if(e.isNetworkError){
         showAlert('login', 'error', e.message);
@@ -861,32 +854,6 @@
     if(rules) rules.querySelectorAll('[data-rule]').forEach(li => { li.dataset.met = '0'; });
   }
 
-  /* ---------- forgot password ---------- */
-  async function handleForgotPassword(evt){
-    evt.preventDefault();
-    clearAlerts('forgot');
-    const email = document.getElementById('forgot-email').value.trim();
-    const emailOk = EMAIL_RE.test(email);
-    setFieldError('forgot-email-field', !emailOk);
-    if(!emailOk) return;
-
-    const submitBtn = evt.target.querySelector('button[type="submit"]');
-    const submitLabel = submitBtn ? submitBtn.innerHTML : '';
-    if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
-    try{
-      await CyberYardHubAPI.auth.forgotPassword({ email });
-      showAlert('forgot', 'success', 'If the account exists, further instructions will be provided.');
-      evt.target.reset();
-    }catch(e){
-      if(e.isNetworkError) showAlert('forgot', 'error', e.message);
-      else if(e.status === 429) showAlert('forgot', 'error', 'Too many requests. Please try again later.');
-      else if(e.status === 400) showAlert('forgot', 'error', firstZodMessage(e.issues) || 'Please enter a valid email address.');
-      else showAlert('forgot', 'error', e.message || 'Unable to process the request right now.');
-    }finally{
-      if(submitBtn){ submitBtn.disabled = false; submitBtn.innerHTML = submitLabel; }
-    }
-  }
-
   /* ---------- logout ---------- */
   async function handleLogout(){
     try{
@@ -946,21 +913,18 @@
   /* ---------- protected dashboard route ---------- */
   async function renderDashboard(session){
     const initial = (session.username || '?').charAt(0).toUpperCase();
-    document.getElementById('dash-username').textContent = session.username;
-    document.getElementById('dash-email').textContent = session.email;
-    document.getElementById('dash-username-mini').textContent = session.username;
-    document.getElementById('dash-email-mini').textContent = session.email;
-    document.getElementById('dash-username-2').textContent = session.username;
-    document.getElementById('dash-email-2').textContent = session.email;
-    document.getElementById('dash-avatar-initial').textContent = initial;
-    document.getElementById('dash-avatar-initial-2').textContent = initial;
-    document.getElementById('dash-date').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+    setText('dash-username', session.username);
+    setText('dash-email', session.email);
+    setText('dash-username-2', session.username);
+    setText('dash-email-2', session.email);
+    setText('dash-avatar-initial-2', initial);
+    setText('dash-date', new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}));
 
     if(session.createdAt){
       const d = new Date(session.createdAt);
-      document.getElementById('dash-since').textContent = d.toLocaleDateString(undefined, {month:'short', year:'numeric'});
+      setText('dash-since', d.toLocaleDateString(undefined, {month:'short', year:'numeric'}));
     } else {
-      document.getElementById('dash-since').textContent = '—';
+      setText('dash-since', '—');
     }
 
     try{
@@ -1058,21 +1022,21 @@
 
   async function loadProfileConnections(kind){
     if(!currentUser){ redirectToLoginFromNav('view your connections'); return; }
-    const panel=document.getElementById('profile-connections-panel'),list=document.getElementById('profile-connections-list'); if(!panel||!list)return; panel.classList.remove('hidden'); setText('profile-connections-title',kind==='followers'?'Followers':'Following'); list.textContent='Loading…';
+    const panel=document.getElementById('profile-connections-panel'),list=document.getElementById('profile-connections-list'); if(!panel||!list)return; panel.classList.remove('hidden'); setText('profile-connections-title',kind==='followers'?'Followers':kind==='following'?'Following':'Blocked users'); list.textContent='Loading…';
     try{ const response=kind==='followers'?await CyberYardHubAPI.users.followers(currentUser.id,{limit:50,offset:0}):kind==='following'?await CyberYardHubAPI.users.following(currentUser.id,{limit:50,offset:0}):await CyberYardHubAPI.users.blocked({limit:50,offset:0}); list.innerHTML=response.users?.length?response.users.map(u=>`<div class="admin-extra-row"><div class="community-post-author"><span class="community-avatar">${escapeHtml((u.username||'?').charAt(0).toUpperCase())}</span><strong>${escapeHtml(u.username)}</strong>${kind==='blocked'?`<button class="btn btn-ghost btn-small" onclick="unblockProfileUser(${escapeHtml(JSON.stringify(u.id))})">Unblock</button>`:''}</div></div>`).join(''):'<div class="admin-extra-row">No users in this list.</div>'; panel.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){list.textContent=e.message||'Unable to load connections.';}
   }
 
   async function unblockProfileUser(id){try{await CyberYardHubAPI.users.unblock(id);await loadProfileConnections('blocked');}catch(e){alert(e.message||'Unable to unblock user.');}}
 
+  function closeProfileConnections(){ document.getElementById('profile-connections-panel')?.classList.add('hidden'); }
+
   async function renderProfilePage(session){
     const initial = (session.username || '?').charAt(0).toUpperCase();
-    setText('profile-side-username', session.username);
-    setText('profile-side-email', session.email);
-    setText('profile-side-avatar-initial', initial);
     setText('profile-hero-username', session.username);
+    setText('profile-hero-handle', session.username);
     setText('profile-hero-email', session.email);
     setText('profile-hero-avatar-initial', initial);
-    try{ const profileResponse=await CyberYardHubAPI.users.meProfile(); const p=profileResponse.profile; setText('profile-bio',p.bio||'No bio added yet.'); setText('profile-hero-username',p.username); if(p.avatarUrl){ const avatar=document.getElementById('profile-hero-avatar-initial'); if(avatar) avatar.textContent=p.username.charAt(0).toUpperCase(); } renderSocialProgress('profile-category-progress',p.categories||[]); renderSocialProgress('profile-difficulty-progress',p.difficulties||[]); }catch(_){ setText('profile-bio','No bio added yet.'); }
+    try{ const profileResponse=await CyberYardHubAPI.users.meProfile(); const p=profileResponse.profile; setText('profile-bio',p.bio||'No bio added yet.'); setText('profile-hero-username',p.username); setText('profile-hero-handle',p.username); if(p.avatarUrl){ const avatar=document.getElementById('profile-hero-avatar-initial'); if(avatar) avatar.textContent=p.username.charAt(0).toUpperCase(); } renderSocialProgress('profile-category-progress',p.categories||[]); renderSocialProgress('profile-difficulty-progress',p.difficulties||[]); }catch(_){ setText('profile-bio','No bio added yet.'); }
 
     if(session.createdAt){
       const d = new Date(session.createdAt);
@@ -1088,8 +1052,6 @@
       const profile = profileResponse.profile;
       setText('profile-followers-count', profile.followersCount || 0);
       setText('profile-following-count', profile.followingCount || 0);
-      setText('profile-first-blood-summary', profile.firstBloodCount || 0);
-      setText('profile-longest-summary', profile.longestStreak || 0);
       setText('profile-bio', profile.bio || 'No bio added yet.');
       renderSocialProgress('profile-category-progress', profile.categories || []);
       renderSocialProgress('profile-difficulty-progress', profile.difficulties || []);
@@ -1117,153 +1079,131 @@
     await renderProfilePage(session);
   }
 
-  /* ---------- Modification 3: notifications + user activity ---------- */
-  function installUserActivityNavigation(){
-    document.querySelectorAll('.dash-nav').forEach(nav => {
-      if(!nav.querySelector('[data-nav="notifications"]')){
-        const link=document.createElement('a');
-        link.className='dash-nav-item'; link.dataset.nav='notifications'; link.href='#';
-        link.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg> Notifications <span class="notification-count notification-count-inline hidden">0</span>';
-        link.addEventListener('click', event => { event.preventDefault(); navGo('notifications'); });
-        const settings=nav.querySelector('[data-nav="settings"]');
-        nav.insertBefore(link, settings || null);
-      }
-      if(!nav.querySelector('[data-nav="activity"]')){
-        const link=document.createElement('a');
-        link.className='dash-nav-item'; link.dataset.nav='activity'; link.href='#';
-        link.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5M4 19h16"/><path d="M8 16l3-4 3 2 5-7"/></svg> Activity';
-        link.addEventListener('click', event => { event.preventDefault(); navGo('activity'); });
-        const settings=nav.querySelector('[data-nav="settings"]');
-        nav.insertBefore(link, settings || null);
-      }
-    });
+  /* ---------- account sub-navigation ----------
+     One shared switcher for every signed-in view. It replaces the sidebar
+     that used to be copy-pasted into each view, so account navigation is
+     declared once and can never drift between pages. It is only rendered
+     for an authenticated session on an account surface. */
+  const ACCOUNT_VIEWS = new Set([
+    'dashboard', 'profile', 'badges', 'activity', 'settings', 'challenges',
+    'challenge-detail', 'leaderboard', 'teams', 'submit-flag', 'community',
+    'events', 'event-detail', 'admin'
+  ]);
+
+  function syncAccountSubnav(session){
+    const bar = document.getElementById('account-subnav');
+    if(!bar) return;
+    const show = !!session && ACCOUNT_VIEWS.has(activeViewName);
+    bar.hidden = !show;
+    if(!session) return;
+    setText('account-subnav-username', session.username);
+    setText('account-subnav-email', session.email);
+    setText('account-subnav-avatar', (session.username || '?').charAt(0).toUpperCase());
   }
 
-  function setNotificationCount(count){
-    const value=Math.max(0, Number(count)||0);
-    document.querySelectorAll('#nav-notification-count,#notifications-side-count,.notification-count-inline').forEach(el=>{
-      el.textContent=value > 99 ? '99+' : String(value);
-      el.classList.toggle('hidden', value===0);
-    });
+  function syncFooterAccountState(session){
+    document.querySelectorAll('[data-nav-guest-action]').forEach(el => { el.hidden = !!session; });
+    document.querySelectorAll('[data-nav-authed-cta]').forEach(el => { el.hidden = !session; });
   }
 
-  async function refreshNotificationBadge(){
-    const session=await getSession();
-    if(!session){
-      setNotificationCount(0);
-      if(notificationPollTimer){ clearInterval(notificationPollTimer); notificationPollTimer=null; }
+  /* ---------- home range read-out (live) ----------
+     Everything below the hero is driven by the real API. Guests see a neutral
+     read-out (an em dash plus a sign-in hint) rather than invented numbers,
+     because every range endpoint is authenticated — showing "48 operators"
+     to an anonymous visitor would be a fiction. Signed-in visitors get live
+     figures, refreshed on range events and on a slow interval so the landing
+     page is never stale when a tab is left open. */
+  const HOME_LIVE_KEYS = ['challenges','operators','solved','categories','difficulty','teams'];
+  const HOME_LIVE_TILE_CAP = 100;   // GET /api/leaderboard rejects limit > 100
+  const HOME_LIVE_TEAM_CAP = 50;    // GET /api/teams/leaderboard rejects limit > 50
+  let homeLiveSeq = 0;
+  let homeLiveTimer = null;
+
+  function setHomeLiveValue(key, value){
+    const cell = document.querySelector(`[data-home-live="${key}"] [data-home-live-value]`);
+    if(cell) cell.textContent = value;
+  }
+
+  function renderHomeLiveIdle(message){
+    HOME_LIVE_KEYS.forEach(key => setHomeLiveValue(key, '—'));
+    const note = document.getElementById('home-live-note');
+    if(note) note.textContent = message;
+    const refresh = document.getElementById('home-live-refresh');
+    if(refresh) refresh.disabled = true;
+    const card = document.querySelector('.home-live-card');
+    if(card) card.dataset.state = 'idle';
+    setText('home-pulse-state', 'Waiting for a signed-in range');
+    const fill = document.getElementById('home-pulse-fill');
+    if(fill) fill.style.width = '0%';
+    setText('home-pulse-challenges', '—');
+    setText('home-pulse-solved', '—');
+    setText('home-pulse-rate', '—');
+    const board = document.getElementById('home-pulse-board');
+    if(board) board.innerHTML = '<li class="home-pulse-empty">Sign in to read the live standings.</li>';
+  }
+
+  function renderHomePulseBoard(entries){
+    const board = document.getElementById('home-pulse-board');
+    if(!board) return;
+    if(!entries.length){
+      board.innerHTML = '<li class="home-pulse-empty">No operator has scored yet.</li>';
       return;
     }
-    try{
-      const response=await CyberYardHubAPI.notifications.unreadCount();
-      setNotificationCount(response.unread || 0);
-    }catch(_){ /* Badge is non-critical; page/API errors remain visible where used. */ }
-    if(!notificationPollTimer){
-      notificationPollTimer=setInterval(()=>{ void refreshNotificationBadge(); }, 60000);
-    }
+    board.innerHTML = entries.slice(0, 5).map(entry => `<li class="home-pulse-row${entry.isCurrentUser ? ' is-you' : ''}">
+      <span class="home-pulse-rank">#${escapeHtml(String(entry.rank ?? '—'))}</span>
+      <span class="home-pulse-name">${escapeHtml(entry.username || 'operator')}</span>
+      <span class="home-pulse-solved">${escapeHtml(String(entry.solved ?? 0))} solved</span>
+      <span class="home-pulse-points">${escapeHtml(formatPoints(entry.points || 0))}</span>
+    </li>`).join('');
   }
 
-  function notificationTypeLabel(type){
-    const labels={CHALLENGE_PUBLISHED:'Challenge',CHALLENGE_SOLVED:'Solve',FIRST_BLOOD:'First Blood',BADGE_EARNED:'Badge',SYSTEM:'System',COMMUNITY:'Community'};
-    return labels[type] || 'Notification';
-  }
+  async function refreshHomeLiveStats(){
+    const seq = ++homeLiveSeq;
+    const card = document.querySelector('.home-live-card');
+    if(!card) return;
+    clearInterval(homeLiveTimer);
+    homeLiveTimer = null;
+    if(!currentUser){ renderHomeLiveIdle('Sign in to read live range numbers.'); return; }
+    const refresh = document.getElementById('home-live-refresh');
+    if(refresh) refresh.disabled = true;
+    card.dataset.state = 'loading';
+    const [challengesRes, boardRes, categoriesRes, difficultiesRes, teamsRes] = await Promise.all([
+      CyberYardHubAPI.challenges.list({ limit: 1, offset: 0 }).catch(() => null),
+      CyberYardHubAPI.leaderboard.list({ limit: HOME_LIVE_TILE_CAP, offset: 0 }).catch(() => null),
+      CyberYardHubAPI.categories.list().catch(() => null),
+      CyberYardHubAPI.difficulties.list().catch(() => null),
+      teams.leaderboard({ limit: HOME_LIVE_TEAM_CAP, offset: 0 }).catch(() => null)
+    ]);
+    if(seq !== homeLiveSeq) return;
+    if(refresh) refresh.disabled = false;
+    card.dataset.state = 'live';
 
-  function notificationIcon(type){
-    const icons={
-      CHALLENGE_PUBLISHED:'<path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/>',
-      CHALLENGE_SOLVED:'<path d="M20 6L9 17l-5-5"/>',
-      FIRST_BLOOD:'<path d="M12 22c4 0 7-2.7 7-6.8 0-3.1-1.8-5.7-4.2-8.3.1 2.4-1 3.9-2.3 4.9.1-4.4-1.8-7-4.5-9.8.2 4.1-2.8 6.3-2.8 10.4C5.2 18.7 8.1 22 12 22z"/>',
-      BADGE_EARNED:'<path d="M12 2l2.6 6.6L21 10l-5 4.4L17.4 21 12 17.3 6.6 21 8 14.4 3 10l6.4-1.4z"/>',
-      COMMUNITY:'<path d="M4 5h16v11H8l-4 4z"/>',
-      SYSTEM:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'
-    };
-    return icons[type] || icons.SYSTEM;
-  }
+    const total = Number(challengesRes?.total || 0);
+    const solved = Number(challengesRes?.solvedTotal || 0);
+    const board = Array.isArray(boardRes?.leaderboard) ? boardRes.leaderboard : [];
+    const teamRows = Array.isArray(teamsRes?.leaderboard) ? teamsRes.leaderboard : [];
 
-  function notificationHtml(notification){
-    const unread=!notification.readAt;
-    const safeType=escapeHtml(notificationTypeLabel(notification.type));
-    const safeTitle=escapeHtml(notification.title);
-    const safeMessage=escapeHtml(notification.message);
-    const safeTime=escapeHtml(relativeTime(notification.createdAt));
-    return `<article class="notification-item ${unread?'is-unread':''}" data-notification-id="${escapeHtml(notification.id)}">
-      <div class="notification-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">${notificationIcon(notification.type)}</svg></div>
-      <div class="notification-body"><div class="notification-top"><span class="notification-type">${safeType}</span><time>${safeTime}</time></div><div class="notification-title">${safeTitle}</div><div class="notification-message">${safeMessage}</div></div>
-      <div class="notification-actions">${unread?`<button type="button" class="btn btn-ghost btn-small" onclick="markNotificationReadFromUI(${escapeHtml(JSON.stringify(notification.id))})">Mark read</button>`:''}${notification.link?`<button type="button" class="btn btn-primary btn-small" onclick="openNotificationTarget(${escapeHtml(JSON.stringify(notification.id))},${escapeHtml(JSON.stringify(notification.link))})">Open</button>`:''}</div>
-    </article>`;
-  }
+    setHomeLiveValue('challenges', formatPoints(total));
+    setHomeLiveValue('operators', board.length >= HOME_LIVE_TILE_CAP ? `${HOME_LIVE_TILE_CAP}+` : formatPoints(board.length));
+    setHomeLiveValue('solved', formatPoints(solved));
+    setHomeLiveValue('categories', categoriesRes?.categories?.length ? formatPoints(categoriesRes.categories.length) : '—');
+    setHomeLiveValue('difficulty', difficultiesRes?.difficulties?.length ? formatPoints(difficultiesRes.difficulties.length) : '—');
+    setHomeLiveValue('teams', teamsRes ? (teamRows.length >= HOME_LIVE_TEAM_CAP ? `${HOME_LIVE_TEAM_CAP}+` : formatPoints(teamRows.length)) : '—');
 
-  function renderNotificationPagination(total, limit, offset){
-    const el=document.getElementById('notifications-pagination'); if(!el) return;
-    const page=Math.floor(offset/limit)+1; const pages=Math.max(1,Math.ceil(total/limit));
-    el.innerHTML=`<button type="button" class="btn btn-ghost btn-small" ${offset<=0?'disabled':''} onclick="notificationPreviousPage()">Previous</button><span class="challenge-page-label">Page ${page} / ${pages}</span><button type="button" class="btn btn-ghost btn-small" ${offset+limit>=total?'disabled':''} onclick="notificationNextPage()">Next</button>`;
-  }
+    const note = document.getElementById('home-live-note');
+    if(note) note.textContent = `Live from the range · updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-  async function loadNotifications(){
-    const list=document.getElementById('notifications-list'); if(!list) return;
-    const seq=++notificationSeq;
-    list.innerHTML='<div class="notification-state">Loading notifications…</div>';
-    try{
-      const response=await CyberYardHubAPI.notifications.list({read:notificationReadFilter,limit:notificationPageSize,offset:notificationOffset});
-      if(seq!==notificationSeq) return; // a newer request superseded this one
-      const notifications=response.notifications||[];
-      list.innerHTML=notifications.length ? notifications.map(notificationHtml).join('') : `<div class="notification-state"><div class="notification-state-icon">◌</div><strong>No ${notificationReadFilter==='all'?'notifications':notificationReadFilter+' notifications'} yet.</strong><span>New challenge, solve, badge and community events will appear here.</span></div>`;
-      renderNotificationPagination(response.total||0,response.limit||notificationPageSize,response.offset||0);
-      setNotificationCount(response.unread||0);
-    }catch(e){
-      if(isUnauthorizedError(e)){ redirectToLoginFromNav('view your notifications'); return; }
-      list.innerHTML='<div class="notification-state error">Unable to load notifications right now.</div>';
-    }
-  }
+    const rate = total ? Math.round((solved / total) * 100) : 0;
+    setText('home-pulse-state', total ? `${rate}% of the range captured` : 'Range is being prepared');
+    setText('home-pulse-challenges', formatPoints(total));
+    setText('home-pulse-solved', formatPoints(solved));
+    setText('home-pulse-rate', total ? `${rate}%` : '—');
+    const fill = document.getElementById('home-pulse-fill');
+    if(fill) fill.style.width = `${Math.max(0, Math.min(100, rate))}%`;
+    renderHomePulseBoard(board.map(entry => ({ ...entry, isCurrentUser: entry.id === currentUser?.id })));
 
-  function syncNotificationFilterUI(){
-    document.querySelectorAll('[data-read-filter]').forEach(btn=>{
-      const active=btn.dataset.readFilter===notificationReadFilter;
-      btn.classList.toggle('btn-primary',active); btn.classList.toggle('btn-ghost',!active);
-    });
-  }
-
-  function setNotificationFilter(filter){
-    notificationReadFilter=['all','unread','read'].includes(filter)?filter:'all';
-    notificationOffset=0;
-    syncNotificationFilterUI();
-    void loadNotifications();
-  }
-  function notificationPreviousPage(){ notificationOffset=Math.max(0,notificationOffset-notificationPageSize); void loadNotifications(); }
-  function notificationNextPage(){ notificationOffset+=notificationPageSize; void loadNotifications(); }
-
-  async function markNotificationReadFromUI(id){
-    try{ await CyberYardHubAPI.notifications.markRead(id); await Promise.all([loadNotifications(),refreshNotificationBadge()]); }
-    catch(e){ window.cyhNotify?.(e.message || 'Unable to update the notification.','error'); }
-  }
-  async function markAllNotificationsReadFromUI(){
-    try{ await CyberYardHubAPI.notifications.markAllRead(); await Promise.all([loadNotifications(),refreshNotificationBadge()]); }
-    catch(e){ window.cyhNotify?.(e.message || 'Unable to mark notifications as read.','error'); }
-  }
-
-  async function openNotificationTarget(id, link){
-    try{ await CyberYardHubAPI.notifications.markRead(id); }catch(_){ /* Target navigation can continue. */ }
-    await refreshNotificationBadge();
-    if(link==='/badges'){ navGo('badges'); return; }
-    if(link==='/community'){ navGo('community'); return; }
-    const eventMatch=/^\/events\/([0-9a-f-]{36})$/i.exec(link||'');
-    if(eventMatch){ await goToEventDetail(eventMatch[1]); return; }
-    const challengeMatch=/^\/challenges\/([0-9a-f-]{36})$/i.exec(link||'');
-    if(challengeMatch){ await goToChallengeDetail(challengeMatch[1]); return; }
-    navGo('notifications');
-  }
-
-  async function goToNotifications(){
-    if(!guardViewRoute('notifications','view your notifications')) return;
-    const session=await getSession();
-    if(!session){ redirectToLoginFromNav('view your notifications'); return; }
-    currentNav='notifications'; updateActiveNav();
-    installUserActivityNavigation();
-    const initial=(session.username||'?').charAt(0).toUpperCase();
-    setText('notifications-side-username',session.username); setText('notifications-side-email',session.email); setText('notifications-side-avatar',initial);
-    showView('notifications'); window.scrollTo({top:0,behavior:'auto'});
-    syncNotificationFilterUI();
-    await loadNotifications();
+    clearInterval(homeLiveTimer);
+    homeLiveTimer = setInterval(() => { if(activeViewName === 'landing') void refreshHomeLiveStats(); }, 60000);
   }
 
   function activityIcon(type){
@@ -1315,10 +1255,9 @@
     if(!guardViewRoute('activity','view your activity')) return;
     const session=await getSession();
     if(!session){ redirectToLoginFromNav('view your activity'); return; }
-    currentNav='activity'; updateActiveNav(); installUserActivityNavigation();
-    const initial=(session.username||'?').charAt(0).toUpperCase();
-    setText('activity-side-username',session.username); setText('activity-side-email',session.email); setText('activity-side-avatar',initial);
+    currentNav='activity'; updateActiveNav();
     showView('activity'); window.scrollTo({top:0,behavior:'auto'});
+    syncAccountSubnav(session);
     activityOffset=0; await loadActivityPage();
   }
 
@@ -1348,8 +1287,8 @@
   function renderEventChallenges(challenges){ const root=document.getElementById('event-challenges-list'); if(!root)return; root.innerHTML=challenges?.length?challenges.map(c=>`<article class="event-challenge-row"><div class="event-challenge-number">${c.position}</div><div class="event-challenge-main"><div class="event-challenge-top"><span class="p-tag accent">${escapeHtml(c.category?.name||'Challenge')}</span><span class="difficulty-badge ${escapeHtml((c.difficulty?.name||'').toLowerCase())}">${escapeHtml(c.difficulty?.name||'')}</span></div><h4>${escapeHtml(c.title)}</h4><p>${escapeHtml(c.teaser||'')}</p><div class="event-challenge-meta"><span>${formatPoints(c.points)} pts</span>${c.solved?'<span class="cc-solved-badge">✓ Solved</span>':''}</div></div><div><button type="button" class="btn btn-ghost btn-small" onclick="goToChallengeDetail(${escapeHtml(JSON.stringify(c.id))})">Open challenge</button></div></article>`).join(''):'<div class="challenge-extra-empty">No event challenges are currently available.</div>'; }
   function renderEventAnnouncements(items){ const root=document.getElementById('event-announcements-list'); if(!root)return; root.innerHTML=items?.length?items.map(a=>`<article class="event-announcement"><div class="event-announcement-head"><strong>${escapeHtml(a.title)}</strong><time>${escapeHtml(eventDate(a.createdAt))}</time></div><div>${escapeHtml(a.content)}</div></article>`).join(''):'<div class="challenge-extra-empty">No announcements yet.</div>'; }
   function renderEventLeaderboard(entries){ const root=document.getElementById('event-leaderboard-list'); if(!root)return; root.innerHTML=entries?.length?`<div class="event-lb-table" tabindex="0" role="region" aria-label="Event leaderboard standings"><div class="event-lb-row event-lb-head"><span>Rank</span><span>User</span><span>Points</span><span>Solves</span><span>First Blood</span></div>${entries.map(r=>`<div class="event-lb-row ${r.isCurrentUser?'current':''}"><span>#${r.rank}</span><span>${escapeHtml(r.username)}</span><span>${formatPoints(r.points)}</span><span>${r.solves}</span><span>${r.firstBloods}</span></div>`).join('')}</div>`:'<div class="challenge-extra-empty">No registered participants have scored yet.</div>'; }
-  async function goToEvents(){ if(!guardViewRoute('events','view CTF events')) return; const session=await getSession(); if(!session){redirectToLoginFromNav('view CTF events');return;} currentNav='events';updateActiveNav();setText('events-side-username',session.username);setText('events-side-email',session.email);setText('events-side-avatar',(session.username||'?').charAt(0).toUpperCase());showView('events');window.scrollTo({top:0,behavior:'auto'});resetEventsPage();await loadEvents(); }
-  async function goToEventDetail(id){ if(!guardViewRoute('event-detail','view this event')) return; const session=await getSession(); if(!session){redirectToLoginFromNav('view this event');return;} currentEventId=id; currentNav='events';updateActiveNav();setText('event-detail-side-username',session.username);setText('event-detail-side-email',session.email);setText('event-detail-side-avatar',(session.username||'?').charAt(0).toUpperCase());setText('event-detail-name','Loading…');setText('event-detail-short','Loading event details…');setText('event-detail-description','Loading…');setText('event-detail-status','—');setText('event-detail-access','—');document.getElementById('event-register-btn')?.classList.add('hidden');showView('event-detail');window.scrollTo({top:0,behavior:'auto'});try{const response=await CyberYardHubAPI.events.get(id);if(currentEventId!==id)return;const e=response.event;setText('event-detail-name',e.name);setText('event-detail-short',e.shortDescription||'CTF event');setText('event-detail-description',e.description||'');setText('event-detail-status',eventStatusLabel(e.status));const statusEl=document.getElementById('event-detail-status');if(statusEl){statusEl.className='event-status-pill '+String(e.status||'').toLowerCase().replace(/[^a-z0-9_-]/g,'');}document.getElementById('event-detail-meta').innerHTML=`<div><span>START</span><strong>${escapeHtml(eventDate(e.startAt))}</strong></div><div><span>END</span><strong>${escapeHtml(eventDate(e.endAt))}</strong></div><div><span>PARTICIPANTS</span><strong>${escapeHtml(e.maxParticipants?`${e.participantCount}/${e.maxParticipants}`:String(e.participantCount))}</strong></div><div><span>CHALLENGES</span><strong>${e.challengeCount}</strong></div>`;setText('event-detail-access',response.accessRestricted?'Registration required':'Participant access');const btn=document.getElementById('event-register-btn');if(btn){const locked=!!response.event.registrationLocked;const open=!!response.event.registrationOpen;btn.classList.toggle('hidden',(!response.registered&&!open)||e.status==='ENDED'||e.status==='ARCHIVED');btn.disabled=locked;btn.textContent=response.registered?(locked?'Registered':'Unregister'):'Register';btn.classList.toggle('btn-danger',!!response.registered&&!locked);btn.classList.toggle('btn-primary',!response.registered);}renderEventProgress(response.progress);renderEventChallenges(response.challenges||[]);renderEventAnnouncements(response.announcements||[]);renderEventLeaderboard(response.leaderboard||[]);}catch(e){document.getElementById('event-challenges-list').innerHTML=`<div class="challenge-extra-empty">${escapeHtml(e.message||'Unable to load this event.')}</div>`;} }
+  async function goToEvents(){ if(!guardViewRoute('events','view CTF events')) return; const session=await getSession(); if(!session){redirectToLoginFromNav('view CTF events');return;} currentNav='events';updateActiveNav();showView('events');window.scrollTo({top:0,behavior:'auto'});resetEventsPage();await loadEvents(); }
+  async function goToEventDetail(id){ if(!guardViewRoute('event-detail','view this event')) return; const session=await getSession(); if(!session){redirectToLoginFromNav('view this event');return;} currentEventId=id; currentNav='events';updateActiveNav();setText('event-detail-name','Loading…');setText('event-detail-short','Loading event details…');setText('event-detail-description','Loading…');setText('event-detail-status','—');setText('event-detail-access','—');document.getElementById('event-register-btn')?.classList.add('hidden');showView('event-detail');window.scrollTo({top:0,behavior:'auto'});try{const response=await CyberYardHubAPI.events.get(id);if(currentEventId!==id)return;const e=response.event;setText('event-detail-name',e.name);setText('event-detail-short',e.shortDescription||'CTF event');setText('event-detail-description',e.description||'');setText('event-detail-status',eventStatusLabel(e.status));const statusEl=document.getElementById('event-detail-status');if(statusEl){statusEl.className='event-status-pill '+String(e.status||'').toLowerCase().replace(/[^a-z0-9_-]/g,'');}document.getElementById('event-detail-meta').innerHTML=`<div><span>START</span><strong>${escapeHtml(eventDate(e.startAt))}</strong></div><div><span>END</span><strong>${escapeHtml(eventDate(e.endAt))}</strong></div><div><span>PARTICIPANTS</span><strong>${escapeHtml(e.maxParticipants?`${e.participantCount}/${e.maxParticipants}`:String(e.participantCount))}</strong></div><div><span>CHALLENGES</span><strong>${e.challengeCount}</strong></div>`;setText('event-detail-access',response.accessRestricted?'Registration required':'Participant access');const btn=document.getElementById('event-register-btn');if(btn){const locked=!!response.event.registrationLocked;const open=!!response.event.registrationOpen;btn.classList.toggle('hidden',(!response.registered&&!open)||e.status==='ENDED'||e.status==='ARCHIVED');btn.disabled=locked;btn.textContent=response.registered?(locked?'Registered':'Unregister'):'Register';btn.classList.toggle('btn-danger',!!response.registered&&!locked);btn.classList.toggle('btn-primary',!response.registered);}renderEventProgress(response.progress);renderEventChallenges(response.challenges||[]);renderEventAnnouncements(response.announcements||[]);renderEventLeaderboard(response.leaderboard||[]);}catch(e){document.getElementById('event-challenges-list').innerHTML=`<div class="challenge-extra-empty">${escapeHtml(e.message||'Unable to load this event.')}</div>`;} }
   async function toggleEventRegistration(){ if(!currentEventId)return; const btn=document.getElementById('event-register-btn'); const unregister=btn?.textContent==='Unregister'; try{ if(unregister)await CyberYardHubAPI.events.unregister(currentEventId); else await CyberYardHubAPI.events.register(currentEventId); await goToEventDetail(currentEventId); }catch(e){alert(e.message||'Unable to update event registration.');} }
 
   /* ---------- Phase 8: badges / community ---------- */
@@ -1402,10 +1341,7 @@
     const session = await getSession();
     if(!session){ redirectToLoginFromNav('view your badges'); return; }
     currentNav = 'badges'; updateActiveNav();
-    setText('badges-side-username', session.username);
-    setText('badges-side-email', session.email);
-    setText('badges-side-avatar', (session.username || '?').charAt(0).toUpperCase());
-    showView('badges');
+showView('badges');
     window.scrollTo({top:0, behavior:'auto'});
     await loadBadgesInto('badges-grid');
   }
@@ -1426,7 +1362,7 @@
   async function goToCommunity(){
     if(!guardViewRoute('community','join the community')) return;
     const session=await getSession(); if(!session){ redirectToLoginFromNav('join the community'); return; }
-    currentNav='community'; updateActiveNav(); setText('community-side-username',session.username); setText('community-side-email',session.email); setText('community-side-avatar',(session.username||'?').charAt(0).toUpperCase()); showView('community'); window.scrollTo({top:0,behavior:'auto'}); await loadCommunityPosts();
+    currentNav='community'; updateActiveNav();showView('community'); window.scrollTo({top:0,behavior:'auto'}); await loadCommunityPosts();
   }
   function communityCommentHtml(post, comment){ const author=comment&&comment.author?comment.author:{id:null,username:'deleted'}; const mine=!!currentUser&&author.id!=null&&author.id===currentUser.id; return `<div class="community-comment"><div><strong>${escapeHtml(author.username)}</strong><span class="community-meta">${new Date(comment.createdAt).toLocaleString()}</span></div><div class="community-comment-content">${escapeHtml(comment.content)}</div><div class="community-actions">${mine?`<button class="btn btn-ghost btn-small" onclick="editCommunityComment(${escapeHtml(JSON.stringify(post.id))},${escapeHtml(JSON.stringify(comment.id))})">Edit</button><button class="btn btn-danger btn-small" onclick="deleteCommunityComment(${escapeHtml(JSON.stringify(post.id))},${escapeHtml(JSON.stringify(comment.id))})">Delete</button>`:''}<button class="btn btn-ghost btn-small" onclick="reportCommunityComment(${escapeHtml(JSON.stringify(post.id))},${escapeHtml(JSON.stringify(comment.id))})">Report</button></div></div>`; }
   function communityPostHtml(post){ const author=post&&post.author?post.author:{id:null,username:'deleted'}; const mine=!!currentUser&&author.id!=null&&author.id===currentUser.id; return `<article class="community-post panel-block"><div class="community-post-head"><div><div class="community-post-author"><span class="community-avatar">${escapeHtml((author.username||'?').charAt(0).toUpperCase())}</span><span><strong>${escapeHtml(author.username)}</strong><span class="community-meta">${new Date(post.createdAt).toLocaleString()}</span></span></div><h3>${escapeHtml(post.title)}</h3><span class="p-tag accent">${escapeHtml(communityCategoryLabel(post.category))}</span></div>${mine?`<div class="community-actions"><button class="btn btn-ghost btn-small" onclick="editCommunityPost(${escapeHtml(JSON.stringify(post.id))})">Edit</button><button class="btn btn-danger btn-small" onclick="deleteCommunityPost(${escapeHtml(JSON.stringify(post.id))})">Delete</button></div>`:''}</div><div class="community-post-content">${escapeHtml(post.content)}</div><div class="community-social-actions"><button class="btn btn-ghost btn-small" onclick="toggleCommunityLike(${escapeHtml(JSON.stringify(post.id))},${post.viewerReacted?'true':'false'})">${post.viewerReacted?'♥ Liked':'♡ Like'} · ${post.reactionCount}</button><button class="btn btn-ghost btn-small" onclick="loadCommunityComments(${escapeHtml(JSON.stringify(post.id))})">Replies · ${post.commentCount}</button><button class="btn btn-ghost btn-small" onclick="reportCommunityPost(${escapeHtml(JSON.stringify(post.id))})">Report</button></div><div id="community-comments-${escapeHtml(post.id)}" class="community-comments"></div></article>`; }
@@ -1465,7 +1401,7 @@
   function renderPodium(entries){
     const podium = entries.slice(0, 3);
     if(podium.length < 3){
-      document.getElementById('lb-podium').innerHTML = '<div class="panel-block" style="grid-column:1/-1;">Not enough ranked operators yet.</div>';
+      document.getElementById('lb-podium').innerHTML = '<div class="board-empty">The top three appear once three operators have scored.</div>';
       return;
     }
     const [p1, p2, p3] = podium;
@@ -1562,12 +1498,12 @@
     if(teamScoreboardUnavailable){ renderScoreboardMode('solo'); return; }
     const list = document.getElementById('team-scoreboard-list');
     const seq = ++teamScoreboardRequestSeq;
-    if(list) list.innerHTML = '<div class="challenge-extra-empty">Loading team standings…</div>';
+    if(list) list.innerHTML = '<div class="board-empty">Loading team standings…</div>';
     try{
       const response = await teams.leaderboard({limit:50, offset:0});
       if(seq !== teamScoreboardRequestSeq) return;
       const rows = Array.isArray(response?.leaderboard) ? response.leaderboard : [];
-      if(list) list.innerHTML = rows.length ? `<div class="team-rank-table" role="table" aria-label="Team scoreboard"><div class="team-rank-row team-rank-head" role="row"><span>Rank</span><span>Team</span><span>Members</span><span>Score</span></div>${rows.map(row => `<div class="team-rank-row" role="row"><span>#${escapeHtml(String(row.rank ?? '—'))}</span><strong>${escapeHtml(row.name || 'Unnamed team')}</strong><span>${escapeHtml(String(row.memberCount ?? 0))}</span><span>${escapeHtml(formatPoints(row.score || 0))} pts</span></div>`).join('')}</div>` : '<div class="challenge-extra-empty">No teams have scored yet.</div>';
+      if(list) list.innerHTML = rows.length ? `<div class="team-rank-table" role="table" aria-label="Team scoreboard"><div class="team-rank-row team-rank-head" role="row"><span>Rank</span><span>Team</span><span>Members</span><span>Score</span></div>${rows.map(row => `<div class="team-rank-row" role="row"><span>#${escapeHtml(String(row.rank ?? '—'))}</span><strong>${escapeHtml(row.name || 'Unnamed team')}</strong><span>${escapeHtml(String(row.memberCount ?? 0))}</span><span>${escapeHtml(formatPoints(row.score || 0))} pts</span></div>`).join('')}</div>` : '<div class="board-empty">No teams have scored yet.</div>';
       renderScoreboardMode('team');
     }catch(error){
       if(seq !== teamScoreboardRequestSeq) return;
@@ -1575,7 +1511,7 @@
       teamScoreboardUnavailable = true;
       console.warn('CyberYardHub team scoreboard unavailable; hiding Team tab.', error);
       renderScoreboardMode('solo');
-      if(list) list.innerHTML = '<div class="challenge-extra-empty">Team standings are not available in this deployment.</div>';
+      if(list) list.innerHTML = '<div class="board-empty">Team standings are not available in this deployment.</div>';
       window.cyhNotify?.('Team standings are not available in this deployment.', 'info');
     }
   }
@@ -1587,15 +1523,23 @@
     currentNav = 'leaderboard'; updateActiveNav();
     showView('leaderboard');
     window.scrollTo({top:0, behavior:'auto'});
+    syncAccountSubnav(session);
     renderScoreboardMode('solo');
+    document.getElementById('lb-selected-user')?.classList.add('hidden');
 
     try{
-      const response = await CyberYardHubAPI.leaderboard.list({ limit: 50, offset: 0 });
+      /* 100 is the server's hard cap for a leaderboard page, so this is the
+         whole board rather than an arbitrary slice. */
+      const response = await CyberYardHubAPI.leaderboard.list({ limit: 100, offset: 0 });
       currentLeaderboard = response.leaderboard || [];
       renderPodium(currentLeaderboard);
       renderLeaderboardTable(currentLeaderboard);
+      setText('lb-standings-note', currentLeaderboard.length
+        ? `${formatPoints(currentLeaderboard.length)} operator${currentLeaderboard.length === 1 ? '' : 's'} ranked by total points.`
+        : 'No operator has scored yet.');
 
-      const me = currentLeaderboard.find(entry => entry.username === session.username);
+      const me = currentLeaderboard.find(entry => entry.id === session.id)
+        || currentLeaderboard.find(entry => entry.username === session.username);
       const initial = (session.username || '?').charAt(0).toUpperCase();
       setText('lb-you-username', session.username);
       setText('lb-you-avatar', initial);
@@ -1617,12 +1561,13 @@
         setText('lb-you-first-bloods', String(stats.firstBloodCount || 0));
         setText('lb-you-streak', `${stats.currentStreak}d`);
       }
-      document.getElementById('lb-ellipsis').classList.toggle('hidden', currentLeaderboard.length === 0);
-      document.getElementById('lb-you-row').classList.remove('hidden');
+      document.getElementById('lb-ellipsis')?.classList.toggle('hidden', currentLeaderboard.length === 0);
+      document.getElementById('lb-you-row')?.classList.remove('hidden');
     }catch(e){
       if(isUnauthorizedError(e)){ redirectToLoginFromNav('view the scoreboard'); return; }
-      document.getElementById('lb-podium').innerHTML = '<div class="panel-block" style="grid-column:1/-1;">Unable to load the scoreboard right now.</div>';
+      document.getElementById('lb-podium').innerHTML = '<div class="board-empty">The scoreboard could not be loaded right now.</div>';
       document.getElementById('lb-table-body').innerHTML = '';
+      document.getElementById('lb-you-row')?.classList.add('hidden');
     }
   }
   /* ---------- secure operator console: URL-gated management workspace ---------- */
@@ -2221,8 +2166,7 @@
     const session = await getSession();
     if(!session || session.role !== 'ADMIN'){ panelEntryAuthorized = false; opsIdentityExpiresAt = 0; currentNav = 'home'; updateActiveNav(); showView('landing'); return; }
     currentNav = 'admin'; updateActiveNav(); showView('admin'); window.scrollTo({ top: 0, behavior: 'auto' });
-    setText('admin-side-username', session.username); setText('admin-side-email', session.email); setText('admin-side-avatar-initial', (session.username || '?').charAt(0).toUpperCase());
-    opsInitConsole();
+opsInitConsole();
     try{ await opsLoadReferenceData(); opsUpdateIdentityStatus(); await opsLoadTab(opsTab); }catch(error){ opsNotify(opsError(error, 'Unable to load the secure console.'), 'error'); }
   }
 
@@ -2246,38 +2190,150 @@
   function setChallengeFilter(type, value){
     challengeFilters[type] = value;
     challengeOffset = 0;
-    renderChallengeFilters();
-    const solved=document.getElementById('chal-solved-filter'); if(solved) solved.value=challengeFilters.solved;
-    const sort=document.getElementById('chal-sort'); if(sort) sort.value=challengeFilters.sort;
+    syncChallengeFilterState();
+    loadChallengeGrid();
+  }
+
+  function resetChallengeFilters(){
+    Object.assign(challengeFilters, { search:'', category:'all', difficulty:'all', solved:'all', sort:'newest' });
+    challengeOffset = 0;
+    const search = document.getElementById('chal-search-input');
+    if(search) search.value = '';
+    syncChallengeFilterState();
     loadChallengeGrid();
   }
 
   function onChallengeFilterChange(){
-    challengeFilters.search = document.getElementById('chal-search-input').value;
+    const input = document.getElementById('chal-search-input');
+    challengeFilters.search = input ? input.value : '';
     challengeOffset = 0;
     /* Debounced so we don't fire an API request on every keystroke. */
     clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(loadChallengeGrid, 300);
+    searchDebounceTimer = setTimeout(() => {
+      renderActiveChallengeFilters();
+      loadChallengeGrid();
+    }, 300);
   }
 
-  function buildFilterPills(containerId, options, type){
+  /* Removable summary of the active filters, rendered next to the results
+     heading so a filtered view is never mistaken for the whole range. */
+  function renderActiveChallengeFilters(){
+    const host = document.getElementById('chal-active-filters');
+    if(!host) return;
+    const chips = [];
+    if(challengeFilters.search) chips.push({ key:'search', label:`"${challengeFilters.search}"` });
+    if(challengeFilters.category !== 'all') chips.push({ key:'category', label:challengeFilters.category });
+    if(challengeFilters.difficulty !== 'all') chips.push({ key:'difficulty', label:challengeFilters.difficulty });
+    if(challengeFilters.solved !== 'all') chips.push({ key:'solved', label:challengeFilters.solved === 'solved' ? 'Solved' : 'Unsolved' });
+    host.replaceChildren();
+    if(!chips.length){
+      const hint = document.createElement('span');
+      hint.className = 'range-active-empty';
+      hint.textContent = 'No filters applied — showing every published challenge.';
+      host.appendChild(hint);
+      return;
+    }
+    chips.forEach(chip => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'range-chip';
+      button.innerHTML = `${escapeHtml(chip.label)}<span aria-hidden="true">×</span>`;
+      button.setAttribute('aria-label', `Remove filter ${chip.label}`);
+      button.addEventListener('click', () => {
+        if(chip.key === 'search'){
+          challengeFilters.search = '';
+          const input = document.getElementById('chal-search-input');
+          if(input) input.value = '';
+        } else {
+          challengeFilters[chip.key] = 'all';
+        }
+        setChallengeFilter(chip.key, challengeFilters[chip.key]);
+      });
+      host.appendChild(button);
+    });
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'range-chip range-chip-clear';
+    clear.textContent = 'Clear all';
+    clear.addEventListener('click', resetChallengeFilters);
+    host.appendChild(clear);
+  }
+
+  /* The filter rail is a real control surface, not decoration: each option
+     maps straight onto a GET /api/challenges query parameter, so what the
+     rail shows and what the grid returns can never disagree. */
+  function buildFilterOptions(containerId, options, type){
     const container=document.getElementById(containerId);
     if(!container) return;
     container.replaceChildren();
     options.forEach(opt => {
       const value = opt === 'All' ? 'all' : opt;
-      const button=document.createElement('button');
-      button.type='button';
-      button.className='filter-pill' + (challengeFilters[type] === value ? ' active' : '');
-      button.textContent=opt;
-      button.addEventListener('click',()=>setChallengeFilter(type,value));
-      container.appendChild(button);
+      const label=document.createElement('label');
+      label.className='range-filter-option';
+      label.dataset.filterValue=value;
+      const input=document.createElement('input');
+      input.type='radio';
+      input.name=`chal-filter-${type}`;
+      input.value=value;
+      input.addEventListener('change',()=>{ if(input.checked) setChallengeFilter(type,value); });
+      const text=document.createElement('span');
+      text.className='range-filter-option-label';
+      text.textContent=opt === 'All' ? 'All' : opt;
+      label.appendChild(input);
+      label.appendChild(text);
+      container.appendChild(label);
     });
   }
 
+  function buildSolvedFilterOptions(){
+    const container=document.getElementById('chal-solved-filters');
+    if(!container) return;
+    const options=[{value:'all',label:'All'},{value:'unsolved',label:'Unsolved'},{value:'solved',label:'Solved'}];
+    container.replaceChildren();
+    options.forEach(opt=>{
+      const label=document.createElement('label');
+      label.className='range-filter-option';
+      label.dataset.filterValue=opt.value;
+      const input=document.createElement('input');
+      input.type='radio';
+      input.name='chal-filter-solved';
+      input.value=opt.value;
+      input.addEventListener('change',()=>{ if(input.checked) setChallengeFilter('solved',opt.value); });
+      const text=document.createElement('span');
+      text.className='range-filter-option-label';
+      text.textContent=opt.label;
+      label.appendChild(input);
+      label.appendChild(text);
+      container.appendChild(label);
+    });
+  }
+
+  /* Reflects `challengeFilters` onto the existing controls. Selecting a
+     filter must NOT rebuild the rail: replacing the node a keyboard user is
+     standing on would drop focus mid-interaction, and the option list only
+     changes when the taxonomy is (re)loaded. */
+  function syncChallengeFilterState(){
+    const groups=[['chal-category-filters','category'],['chal-difficulty-filters','difficulty'],['chal-solved-filters','solved']];
+    groups.forEach(([id,key])=>{
+      const container=document.getElementById(id);
+      if(!container) return;
+      container.querySelectorAll('.range-filter-option').forEach(label=>{
+        const active=label.dataset.filterValue===challengeFilters[key];
+        label.classList.toggle('is-active',active);
+        const input=label.querySelector('input');
+        if(input) input.checked=active;
+      });
+    });
+    const sort=document.getElementById('chal-sort');
+    if(sort) sort.value=challengeFilters.sort;
+    renderActiveChallengeFilters();
+  }
+
   function renderChallengeFilters(){
-    buildFilterPills('chal-category-filters', categoryOptions, 'category');
-    buildFilterPills('chal-difficulty-filters', difficultyOptions, 'difficulty');
+    buildFilterOptions('chal-category-filters', categoryOptions, 'category');
+    buildFilterOptions('chal-difficulty-filters', difficultyOptions, 'difficulty');
+    buildSolvedFilterOptions();
+    syncChallengeFilterState();
   }
 
   /* Loaded once per page load (cached), since categories/difficulties
@@ -2345,8 +2401,16 @@
   function challengePreviousPage(){ challengeOffset=Math.max(0,challengeOffset-challengePageSize); loadChallengeGrid(); }
   function challengeNextPage(){ challengeOffset+=challengePageSize; loadChallengeGrid(); }
 
+  function renderChallengeResultSummary(total, shown){
+    const summary = document.getElementById('range-filter-summary');
+    if(summary) summary.textContent = total
+      ? `${formatPoints(total)} challenge${total === 1 ? '' : 's'} match · showing ${formatPoints(shown)}`
+      : 'No challenges match the current filters.';
+  }
+
   async function loadChallengeGrid(){
     const grid = document.getElementById('chal-grid');
+    if(!grid) return;
     const mySeq = ++challengeRequestSeq;
     grid.innerHTML = '<div class="chal-empty">Loading challenges…</div>';
     try{
@@ -2360,13 +2424,17 @@
         offset: challengeOffset
       });
       if(mySeq !== challengeRequestSeq) return;
-      renderChallengeCards(res.challenges || []);
+      const list = res.challenges || [];
+      renderChallengeCards(list);
       renderChallengePagination(Number(res.total||0), Number(res.limit||challengePageSize), Number(res.offset||0));
+      renderChallengeResultSummary(Number(res.total||0), list.length);
+      renderActiveChallengeFilters();
     }catch(e){
       if(mySeq !== challengeRequestSeq) return;
       if(isUnauthorizedError(e)){ redirectToLoginFromNav('view challenges'); return; }
       grid.innerHTML = `<div class="chal-empty">${escapeHtml(e.message || 'Unable to load challenges right now.')}</div>`;
       const pagination=document.getElementById('chal-pagination'); if(pagination) pagination.innerHTML='';
+      renderChallengeResultSummary(0, 0);
     }
   }
 
@@ -2378,14 +2446,10 @@
     currentNav = 'challenges'; updateActiveNav();
     showView('challenges');
     window.scrollTo({top:0, behavior:'auto'});
+    syncAccountSubnav(session);
 
-    const initial = (session.username || '?').charAt(0).toUpperCase();
-    setText('chal-side-username', session.username);
-    setText('chal-side-email', session.email);
-    setText('chal-side-avatar-initial', initial);
-
-    const solved=document.getElementById('chal-solved-filter'); if(solved) solved.value=challengeFilters.solved;
-    const sort=document.getElementById('chal-sort'); if(sort) sort.value=challengeFilters.sort;
+    const search = document.getElementById('chal-search-input');
+    if(search && search.value !== challengeFilters.search) search.value = challengeFilters.search;
     await loadChallengeFilterOptions();
     renderChallengeFilters();
     refreshChallengeProgress();
@@ -2416,12 +2480,7 @@
     currentChallengeId = id;
     currentNav = 'challenges'; updateActiveNav();
 
-    const initial = (session.username || '?').charAt(0).toUpperCase();
-    setText('cd-side-username', session.username);
-    setText('cd-side-email', session.email);
-    setText('cd-side-avatar-initial', initial);
-
-    setText('cd-title', 'Loading…');
+setText('cd-title', 'Loading…');
     setText('cd-category', '');
     setText('cd-points', '');
     setText('cd-solves', '—');
@@ -2590,7 +2649,7 @@
         showFlagAlert('success', result.firstBlood ? `Correct! +${formatPoints(result.pointsAwarded)} points · +${formatPoints(result.xpAwarded || 0)} XP · First Blood.` : `Correct! +${formatPoints(result.pointsAwarded)} points · +${formatPoints(result.xpAwarded || 0)} XP.`);
         refreshChallengeProgress();
         loadChallengeExtras();
-        void refreshNotificationBadge();
+        refreshHomeLiveStats();
       } else {
         showFlagAlert('error', 'Incorrect flag. Give it another try.');
       }
@@ -2616,7 +2675,6 @@
   /* ---------- teams (defensive forward-compatible surface) ---------- */
   let currentTeam = null;
   let teamRequestSeq = 0;
-  let teamLeaderboardSeq = 0;
   let teamsApiAvailable = true;
 
   function setTeamsStatus(type, message){
@@ -2642,8 +2700,6 @@
     console.warn('CyberYardHub teams API unavailable; team affordances disabled.', error);
     setTeamsControlsDisabled(true);
     setTeamsStatus('error', 'Team services are not available in this deployment. Solo play remains ready.');
-    const board = document.getElementById('team-leaderboard-card');
-    if(board) board.classList.add('hidden');
   }
   function handleTeamsMutationError(error, fallback){
     const businessNotFound = error?.status === 404 && ['NOT_IN_TEAM','TEAM_NOT_FOUND'].includes(error.code);
@@ -2722,29 +2778,9 @@
       if(root && seq === teamRequestSeq) root.removeAttribute('aria-busy');
     }
   }
-  async function loadTeamLeaderboard(){
-    const root = document.getElementById('team-leaderboard');
-    if(!root) return;
-    const seq = ++teamLeaderboardSeq;
-    root.innerHTML = '<div class="challenge-extra-empty">Loading team standings…</div>';
-    try{
-      const response = await teams.leaderboard({limit:50, offset:0});
-      if(seq !== teamLeaderboardSeq) return;
-      const rows = Array.isArray(response?.leaderboard) ? response.leaderboard : [];
-      root.innerHTML = rows.length ? `<div class="team-rank-table" role="table" aria-label="Team leaderboard"><div class="team-rank-row team-rank-head" role="row"><span>Rank</span><span>Team</span><span>Members</span><span>Score</span></div>${rows.map(row => `<div class="team-rank-row" role="row"><span>#${escapeHtml(String(row.rank ?? '—'))}</span><strong>${escapeHtml(row.name || 'Unnamed team')}</strong><span>${escapeHtml(String(row.memberCount ?? 0))}</span><span>${escapeHtml(formatPoints(row.score || 0))} pts</span></div>`).join('')}</div>` : '<div class="challenge-extra-empty">No teams have scored yet.</div>';
-    }catch(error){
-      if(seq !== teamLeaderboardSeq) return;
-      if(error?.status === 401){ teamsApiAvailable = false; currentUser = null; redirectToLoginFromNav('use the teams hub'); return; }
-      console.warn('CyberYardHub team leaderboard unavailable.', error);
-      root.innerHTML = '<div class="challenge-extra-empty">Team standings are temporarily unavailable.</div>';
-      const board = document.getElementById('team-leaderboard-card');
-      if(board){
-        board.classList.add('hidden');
-        const refresh = board.querySelector('button');
-        if(refresh) refresh.disabled = true;
-      }
-    }
-  }
+  /* Team standings live on the Scoreboard (Teams tab) — one board, one place
+     to read it. The teams hub is about your own crew, so it stays focused on
+     membership, invites and captaincy. */
   async function goToTeams(){
     if(!guardViewRoute('teams','use the teams hub')) return;
     const session = await getSession();
@@ -2754,14 +2790,9 @@
     setTeamsControlsDisabled(false);
     showView('teams');
     window.scrollTo({top:0, behavior:'auto'});
+    syncAccountSubnav(session);
     clearTeamsStatus();
-    const board = document.getElementById('team-leaderboard-card');
-    if(board){
-      board.classList.remove('hidden');
-      const refresh = board.querySelector('button');
-      if(refresh) refresh.disabled = false;
-    }
-    void loadMyTeam().then(() => { if(teamsApiAvailable) return loadTeamLeaderboard(); });
+    await loadMyTeam();
   }
   async function createCurrentTeam(event){
     event.preventDefault();
@@ -2775,7 +2806,6 @@
       renderTeam(response.team);
       event.target.reset();
       setTeamsStatus('success','Team created. Share the invite code with trusted teammates.');
-      void loadTeamLeaderboard();
     }catch(error){ handleTeamsMutationError(error, 'Unable to create the team.'); }
     finally{ if(button) button.disabled = !teamsApiAvailable; }
   }
@@ -2791,7 +2821,6 @@
       renderTeam(response.team);
       event.target.reset();
       setTeamsStatus('success',`Welcome to ${response.team?.name || 'your new team'}.`);
-      void loadTeamLeaderboard();
     }catch(error){ handleTeamsMutationError(error, 'Unable to join that team.'); }
     finally{ if(button) button.disabled = !teamsApiAvailable; }
   }
@@ -2823,7 +2852,6 @@
       const response = await teams.leave();
       renderTeam(null);
       setTeamsStatus('success', response?.dissolved ? 'Team dissolved.' : 'You left the team.');
-      void loadTeamLeaderboard();
     }catch(error){ handleTeamsMutationError(error, 'Unable to leave the team.'); }
   }
 
@@ -2935,7 +2963,7 @@
       else if(result.correct){
         input.value='';
         setQuickResult('success', result.firstBlood ? `Correct! +${formatPoints(result.pointsAwarded)} points · First Blood.` : `Correct! +${formatPoints(result.pointsAwarded)} points.`);
-        void refreshNotificationBadge();
+        void refreshHomeLiveStats();
       }else setQuickResult('error','Incorrect flag. Give it another try.');
     }catch(error){
       if(isUnauthorizedError(error)){ redirectToLoginFromNav('submit a flag'); return; }
@@ -2962,33 +2990,12 @@
   }
 
   /* ---------- settings (protected) ---------- */
-  const DEFAULT_USER_SETTINGS = {
-    theme: 'default',
-    notifications: {
-      challengeUpdates: true,
-      leaderboardAlerts: false,
-      productNews: true
-    }
-  };
+  const DEFAULT_USER_SETTINGS = { theme: 'default' };
 
   function normalizeUserSettings(raw){
-    const base = {
-      theme: DEFAULT_USER_SETTINGS.theme,
-      notifications: { ...DEFAULT_USER_SETTINGS.notifications }
-    };
+    const base = { theme: DEFAULT_USER_SETTINGS.theme };
     if(!raw || typeof raw !== 'object') return base;
     if(raw.theme === 'dim' || raw.theme === 'default') base.theme = raw.theme;
-    if(raw.notifications && typeof raw.notifications === 'object'){
-      if(typeof raw.notifications.challengeUpdates === 'boolean'){
-        base.notifications.challengeUpdates = raw.notifications.challengeUpdates;
-      }
-      if(typeof raw.notifications.leaderboardAlerts === 'boolean'){
-        base.notifications.leaderboardAlerts = raw.notifications.leaderboardAlerts;
-      }
-      if(typeof raw.notifications.productNews === 'boolean'){
-        base.notifications.productNews = raw.notifications.productNews;
-      }
-    }
     return base;
   }
 
@@ -3048,10 +3055,6 @@
   }
 
   async function renderSettingsPage(session){
-    const initial = (session.username || '?').charAt(0).toUpperCase();
-    setText('settings-side-username', session.username);
-    setText('settings-side-email', session.email);
-    setText('settings-side-avatar-initial', initial);
     setText('settings-username', session.username);
     setText('settings-email', session.email);
 
@@ -3067,13 +3070,6 @@
     applyTheme(settings.theme);
     renderThemePills(settings.theme);
 
-    const chal = document.getElementById('settings-notif-challenges');
-    const lb = document.getElementById('settings-notif-leaderboard');
-    const product = document.getElementById('settings-notif-product');
-    if(chal) chal.checked = !!settings.notifications.challengeUpdates;
-    if(lb) lb.checked = !!settings.notifications.leaderboardAlerts;
-    if(product) product.checked = !!settings.notifications.productNews;
-
     const verified = !!session.emailVerified;
     const status = document.getElementById('settings-verification-status');
     const help = document.getElementById('settings-verification-help');
@@ -3086,9 +3082,7 @@
 
     clearAlerts('settings-pw');
     const themeSuccess = document.getElementById('settings-theme-alert-success');
-    const notifSuccess = document.getElementById('settings-notif-alert-success');
     if(themeSuccess) themeSuccess.classList.remove('show');
-    if(notifSuccess) notifSuccess.classList.remove('show');
 
     const pwForm = document.getElementById('settings-pw-form');
     if(pwForm) pwForm.reset();
@@ -3120,23 +3114,6 @@
       showSettingsFlash('settings-theme-alert-success', 'Appearance preference saved on this device.');
     }catch(e){
       showAlert('settings-pw', 'error', 'Unable to save appearance preference.');
-    }
-  }
-
-  async function saveNotificationPreferences(){
-    const session = await getSession();
-    if(!session){ redirectToLoginFromNav('open settings'); return; }
-    try{
-      const settings = await getUserSettings(session.email);
-      settings.notifications = {
-        challengeUpdates: !!document.getElementById('settings-notif-challenges').checked,
-        leaderboardAlerts: !!document.getElementById('settings-notif-leaderboard').checked,
-        productNews: !!document.getElementById('settings-notif-product').checked
-      };
-      await saveUserSettings(session.email, settings);
-      showSettingsFlash('settings-notif-alert-success', 'Notification preferences saved on this device.');
-    }catch(e){
-      showAlert('settings-pw', 'error', 'Unable to save notification preferences.');
     }
   }
 
@@ -3250,30 +3227,6 @@
     finally{ if(button){button.disabled=false;button.textContent='Resend verification email';} }
   }
 
-  async function handleResetPassword(evt){
-    evt.preventDefault();
-    clearAlerts('reset');
-    const next=document.getElementById('reset-new').value;
-    const confirm=document.getElementById('reset-confirm').value;
-    const strongEnough=next.length>=8 && /[A-Za-z]/.test(next) && /[0-9]/.test(next);
-    setFieldError('reset-new-field', !strongEnough);
-    setFieldError('reset-confirm-field', !(confirm && confirm===next));
-    if(!strongEnough || !confirm || confirm!==next) return;
-    if(!pendingResetToken){ showAlert('reset','error','This reset link is missing or has expired. Please request a new one.'); return; }
-    const button=evt.target.querySelector('button[type="submit"]');
-    const buttonLabel=button?button.innerHTML:'';
-    if(button){ button.disabled=true; button.textContent='Updating…'; }
-    try{
-      await CyberYardHubAPI.auth.resetPassword({token:pendingResetToken,newPassword:next});
-      pendingResetToken=null;
-      showAlert('reset','success','Password reset complete. You can now log in with your new password.');
-      evt.target.reset();
-      setTimeout(()=>goTo('login'),900);
-    }catch(e){
-      showAlert('reset','error',e.status===400 ? (e.message || 'This reset link is invalid or has expired.') : (e.message || 'Unable to reset your password right now.'));
-    }finally{ if(button){ button.disabled=false; button.innerHTML=buttonLabel; } }
-  }
-
   async function handleVerificationRoute(token){
     showView('verify-email');
     clearAlerts('verify');
@@ -3292,17 +3245,17 @@
     }
   }
 
-  let pendingResetToken=null;
+  /* Deep link for the one email-link flow that remains: email verification.
+     Password recovery was removed from the platform, so there is no reset
+     branch here and no token is ever accepted without a matching view. */
   function handleAuthHashRoute(){
     const raw=window.location.hash || '';
-    const match=raw.match(/^#(reset-password|verify-email)\?token=([^&]+)$/i);
+    const match=raw.match(/^#(verify-email)\?token=([^&]+)$/i);
     if(!match) return false;
-    const type=match[1].toLowerCase();
     let token=null;
     try{ token=decodeURIComponent(match[2]); }catch(e){ token=null; }
     history.replaceState(null, document.title, window.location.pathname + window.location.search);
-    if(type==='reset-password'){ pendingResetToken=token; showView('reset-password'); }
-    else { void handleVerificationRoute(token); }
+    void handleVerificationRoute(token);
     window.scrollTo({top:0,behavior:'auto'});
     return true;
   }
@@ -3326,11 +3279,16 @@
     try{
       const source = new EventSource(cyhApiBase + '/realtime/stream', {withCredentials:true});
       realtimeSource = source;
-      source.addEventListener('notification', () => { void refreshNotificationBadge(); });
-      source.addEventListener('leaderboard_update', () => { if(activeViewName === 'leaderboard') void goToLeaderboard(); });
-      source.addEventListener('team_score_update', () => { if(activeViewName === 'teams') void loadMyTeam().then(() => { if(teamsApiAvailable) return loadTeamLeaderboard(); }); });
-      source.addEventListener('challenge_solved', () => { if(activeViewName === 'challenges') void refreshChallengeProgress(); });
-      source.addEventListener('first_blood', () => { void refreshNotificationBadge(); });
+      source.addEventListener('leaderboard_update', () => {
+        if(activeViewName === 'leaderboard') void goToLeaderboard();
+        if(activeViewName === 'landing') void refreshHomeLiveStats();
+      });
+      source.addEventListener('team_score_update', () => { if(activeViewName === 'teams') void loadMyTeam(); });
+      source.addEventListener('challenge_solved', () => {
+        if(activeViewName === 'challenges') void refreshChallengeProgress();
+        if(activeViewName === 'landing') void refreshHomeLiveStats();
+      });
+      source.addEventListener('first_blood', () => { if(activeViewName === 'landing') void refreshHomeLiveStats(); });
       source.addEventListener('error', () => {
         /* EventSource retries by default; close after the first failure so a
            missing/disabled stream cannot create a background reconnect loop. */
@@ -3345,27 +3303,21 @@
   }
 
   /* ---------- nav state ---------- */
-  /* Nav destinations that only exist for a signed-in operator: the markup
-     tags each one with [data-nav-auth-only], and the CSS hides them while
-     `body` lacks `.cyh-authed`. So an anonymous visitor never sees a target
+  /* The primary bar only advertises destinations a guest can actually reach:
+     the markup tags each one with [data-nav-auth-only] and it is hidden while
+     `body` lacks `.cyh-authed`, so an anonymous visitor never sees a target
      that would bounce them straight back to a sign-in prompt — including
      during the first paint, before this file has resolved the session.
-     The route guards in showView()/navGo() remain the actual access
-     control; this is purely about not advertising what is unreachable. */
+     The footer deliberately does NOT do this: it lists every page in both
+     states, and the route guards in showView()/navGo() ask a guest to sign
+     in. The route guards remain the actual access control; everything here
+     is presentation. */
   function applyNavAccessVisibility(session){
     const authenticated = !!session;
     document.body.classList.toggle('cyh-authed', authenticated);
     document.querySelectorAll('[data-nav-auth-only]').forEach(link => {
       link.hidden = !authenticated;
       link.setAttribute('aria-hidden', String(!authenticated));
-    });
-    /* A footer column whose links are all account-only (e.g. "Participation")
-       would otherwise be left as a heading with nothing under it for guests. */
-    document.querySelectorAll('.site-footer-column').forEach(column => {
-      const links = column.querySelectorAll('.site-footer-links a');
-      if(!links.length) return;
-      const anyVisible = [...links].some(link => !link.hidden);
-      column.hidden = !anyVisible;
     });
   }
 
@@ -3377,6 +3329,8 @@
     document.getElementById('mm-guest').classList.toggle('hidden', !!session);
     document.getElementById('mm-user').classList.toggle('hidden', !session);
     applyNavAccessVisibility(session);
+    syncFooterAccountState(session);
+    syncAccountSubnav(session);
     if(session){
       const initial = (session.username || '?').charAt(0).toUpperCase();
       document.getElementById('nav-avatar-initial').textContent = initial;
@@ -3387,9 +3341,8 @@
       document.getElementById('mm-email').textContent = session.email;
     }
     await applySessionPreferences(session);
-    installUserActivityNavigation();
     updateActiveNav();
-    await refreshNotificationBadge();
+    void refreshHomeLiveStats();
     if(session) connectRealtimeStream(session); else stopRealtimeStream();
   }
 
@@ -3397,7 +3350,7 @@
     let candidate = '';
     try{
       const hash = window.location.hash || '';
-      if(hash && hash.length > 1 && !/^#(?:reset-password|verify-email)\?/i.test(hash)) candidate = decodeURIComponent(hash.slice(1).split('?')[0]);
+      if(hash && hash.length > 1 && !/^#(?:verify-email)\?/i.test(hash)) candidate = decodeURIComponent(hash.slice(1).split('?')[0]);
       if(!candidate){
         const queryView = new URLSearchParams(window.location.search).get('view');
         if(queryView) candidate = queryView;
@@ -3407,12 +3360,12 @@
         if(pathPart && !/^index(?:\.html)?$/i.test(pathPart)) candidate = pathPart;
       }
     }catch(_){ candidate = ''; }
-    const aliases = { scoreboard:'leaderboard', submitflag:'submit-flag', 'submit_flag':'submit-flag', challenge:'challenges', home:'landing', reset:'reset-password' };
+    const aliases = { scoreboard:'leaderboard', submitflag:'submit-flag', 'submit_flag':'submit-flag', challenge:'challenges', home:'landing' };
     return aliases[candidate.toLowerCase()] || candidate.toLowerCase();
   }
   function restoreInitialView(){
     const route = initialRouteFromLocation();
-    const authFlow = ['landing','home','about','rules','login','signup','forgot','reset-password','verify-email'];
+    const authFlow = ['landing','home','about','rules','login','signup','verify-email'];
     if(!route || !document.getElementById('view-' + normalizeViewName(route))){
       currentNav='home'; updateActiveNav(); showView('landing'); return;
     }

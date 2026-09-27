@@ -178,8 +178,6 @@
       login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
       logout: () => request('/auth/logout', { method: 'POST' }),
       me: () => request('/auth/me', { method: 'GET' }),
-      forgotPassword: (payload) => request('/auth/forgot-password', { method: 'POST', body: payload }),
-      resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: payload }),
       verifyEmail: (payload) => request('/auth/verify-email', { method: 'POST', body: payload }),
       resendVerification: () => request('/auth/resend-verification', { method: 'POST' }),
       changePassword: (payload) => request('/auth/change-password', { method: 'POST', body: payload }),

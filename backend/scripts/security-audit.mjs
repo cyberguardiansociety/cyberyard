@@ -68,7 +68,13 @@ check('Event routes require auth', /router\.use\(requireAuth\)/.test(read('backe
 check('Admin routes require admin middleware', filesUnder('backend/src/routes').filter((f) => path.basename(f).startsWith('admin')).every((f) => /router\.use\(requireAuth, requireAdmin/.test(fs.readFileSync(f, 'utf8'))), 'An admin route file is missing the standard server-side admin guard.');
 check('No frontend dynamic code execution', !/\b(?:eval|new Function)\b/.test(frontend), 'Frontend contains eval/new Function.');
 check('Frontend uses HTML escaping helper', /function escapeHtml\(/.test(frontend), 'escapeHtml helper is missing.');
-check('Frontend notification links are constrained', frontend.includes('const eventMatch=/^\\/events\\/') && frontend.includes('const challengeMatch=/^\\/challenges\\/'), 'Notification navigation does not constrain target paths.');
+/* The notification surface was removed from the product, so the audit now
+   asserts it is gone rather than merely well-constrained: a notification
+   page is a stored-content surface (titles/messages rendered as HTML) with
+   no reason to exist in a self-hosted range. */
+check('Frontend ships no notification surface', !/view-notifications|openNotificationTarget|setNotificationFilter|notificationPreviousPage/.test(frontend) && !/id="view-notifications"/.test(read('index.html')), 'A notification page or its navigation helpers are back in the frontend.');
+check('No unauthenticated password recovery', !/\/forgot-password|\/reset-password/.test(read('backend/src/routes/auth.routes.ts')), 'The API still exposes an unauthenticated password reset endpoint.');
+check('No reset-token issuance path', !/requestPasswordReset|completePasswordReset/.test(allTs), 'Password reset token issuance/completion code is still present.');
 check('Multer is on patched current line', pkg.dependencies?.multer === '^2.4.0', 'Multer dependency is not on the audited 2.4.x line.');
 check('Nodemailer is on hardened 10.0.x line', pkg.dependencies?.nodemailer === '^10.0.10', 'Nodemailer dependency is not on the audited hardened line.');
 check('Node engine matches Nodemailer 10', pkg.engines?.node === '>=20.19.0', 'Node engine was not raised to the required production baseline for Nodemailer 10.');

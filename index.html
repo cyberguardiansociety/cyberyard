@@ -48,10 +48,6 @@
     <button class="btn btn-primary" onclick="navGoAuth('signup')">Get started</button>
   </div>
   <div class="nav-actions hidden" id="nav-user">
-    <button type="button" class="nav-notification-btn" onclick="navGo('notifications')" aria-label="Notifications">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-      <span id="nav-notification-count" class="notification-count hidden">0</span>
-    </button>
     <div class="avatar-menu" id="avatar-menu">
       <button class="avatar-btn" type="button" onclick="toggleAvatarMenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
         <span class="avatar-ring-sm"><span class="avatar-circle-sm" id="nav-avatar-initial">O</span></span>
@@ -64,7 +60,6 @@
         <a href="#" class="ad-item" data-nav="dashboard" role="menuitem" onclick="navGo('dashboard'); return false;">Dashboard</a>
         <a href="#" class="ad-item" data-nav="profile" role="menuitem" onclick="navGo('profile'); return false;">Profile</a>
         <a href="#" class="ad-item" data-nav="badges" role="menuitem" onclick="navGo('badges'); return false;">Badges</a>
-        <a href="#" class="ad-item" data-nav="notifications" role="menuitem" onclick="navGo('notifications'); return false;">Notifications</a>
         <a href="#" class="ad-item" data-nav="activity" role="menuitem" onclick="navGo('activity'); return false;">Activity</a>
         <a href="#" class="ad-item" data-nav="settings" role="menuitem" onclick="navGo('settings'); return false;">Settings</a>
         <div class="ad-divider"></div>
@@ -111,7 +106,6 @@
         <a href="#" data-nav="dashboard" onclick="navGo('dashboard'); return false;">Dashboard</a>
         <a href="#" data-nav="profile" onclick="navGo('profile'); return false;">Profile</a>
         <a href="#" data-nav="badges" onclick="navGo('badges'); return false;">Badges</a>
-        <a href="#" data-nav="notifications" onclick="navGo('notifications'); return false;">Notifications</a>
         <a href="#" data-nav="activity" onclick="navGo('activity'); return false;">Activity</a>
         <a href="#" data-nav="settings" onclick="navGo('settings'); return false;">Settings</a>
       </div>
@@ -121,6 +115,72 @@
 </div>
 
 <main id="main-content">
+
+  <!-- ============ ACCOUNT SUB-NAV ============
+       One horizontal switcher shared by every signed-in view. It replaces
+       the per-page sidebar that used to be duplicated into thirteen
+       separate <aside> blocks, so account navigation is defined once and
+       stays consistent across the whole platform. -->
+  <nav class="account-subnav" id="account-subnav" aria-label="Account sections" hidden>
+    <div class="account-subnav-inner">
+      <div class="account-subnav-links">
+        <a class="account-subnav-link" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <span>Overview</span>
+        </a>
+        <a class="account-subnav-link" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
+          <span>Challenges</span>
+        </a>
+        <a class="account-subnav-link" data-nav="submit-flag" href="#" onclick="navGo('submit-flag'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 21V4M5 5h10l-1.5 3L15 11H5"/></svg>
+          <span>Submit Flag</span>
+        </a>
+        <a class="account-subnav-link" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
+          <span>Scoreboard</span>
+        </a>
+        <a class="account-subnav-link" data-nav="teams" href="#" onclick="navGo('teams'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 5.5a3 3 0 0 1 0 5M18 20a5.6 5.6 0 0 0-2.2-4.4"/></svg>
+          <span>Teams</span>
+        </a>
+        <a class="account-subnav-link" data-nav="events" href="#" onclick="navGo('events'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <span>Events</span>
+        </a>
+        <a class="account-subnav-link" data-nav="community" href="#" onclick="navGo('community'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8"/></svg>
+          <span>Community</span>
+        </a>
+        <a class="account-subnav-link" data-nav="badges" href="#" onclick="navGo('badges'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5"/></svg>
+          <span>Badges</span>
+        </a>
+        <a class="account-subnav-link" data-nav="activity" href="#" onclick="navGo('activity'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 16l3-4 3 2 5-7"/></svg>
+          <span>Activity</span>
+        </a>
+        <a class="account-subnav-link" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
+          <span>Profile</span>
+        </a>
+        <a class="account-subnav-link" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
+          <span>Settings</span>
+        </a>
+      </div>
+      <div class="account-subnav-tail">
+        <span class="account-subnav-user">
+          <span class="account-subnav-avatar" id="account-subnav-avatar" aria-hidden="true">O</span>
+          <span class="account-subnav-meta">
+            <b id="account-subnav-username">operator</b>
+            <small id="account-subnav-email">you@domain.com</small>
+          </span>
+        </span>
+        <button class="btn btn-ghost btn-small" type="button" onclick="handleLogout()">Log out</button>
+      </div>
+    </div>
+  </nav>
 
   <!-- ============ LANDING ============ -->
   <section id="view-landing" class="view active" aria-labelledby="landing-heading">
@@ -191,109 +251,243 @@
             <span class="hero-spark hero-spark-c"></span>
           </div>
         </div>
-
-        <ul class="hero-strip">
-          <li><b>27</b><span>Challenges armed</span></li>
-          <li><b>48</b><span>Operators online</span></li>
-          <li><b>312</b><span>Flags captured today</span></li>
-          <li><b>4</b><span>Categories in play</span></li>
-        </ul>
       </div>
+
+      <!-- Live range read-out. Sits directly under the hero and is fed by the
+           real API (never hardcoded): neutral placeholders for guests, live
+           numbers once a session exists, refreshed on range events. -->
+      <section class="home-live" id="home-live" aria-labelledby="home-live-heading">
+        <div class="home-live-card">
+          <div class="home-live-head">
+            <h2 class="home-live-title" id="home-live-heading">
+              <span class="home-live-pulse" aria-hidden="true"></span>
+              Range read-out
+            </h2>
+            <p class="home-live-note" id="home-live-note">Sign in to read live range numbers.</p>
+            <button class="btn btn-ghost btn-small home-live-refresh" type="button" id="home-live-refresh" onclick="refreshHomeLiveStats()">Refresh</button>
+          </div>
+          <ul class="home-live-grid" id="home-live-grid" role="list" aria-live="polite">
+            <li role="listitem" data-home-live="challenges">
+              <span class="home-live-icon" aria-hidden="true">◆</span>
+              <span class="home-live-value" data-home-live-value>—</span>
+              <span class="home-live-label">Challenges armed</span>
+            </li>
+            <li role="listitem" data-home-live="operators">
+              <span class="home-live-icon" aria-hidden="true">◎</span>
+              <span class="home-live-value" data-home-live-value>—</span>
+              <span class="home-live-label">Operators ranked</span>
+            </li>
+            <li role="listitem" data-home-live="solved">
+              <span class="home-live-icon" aria-hidden="true">✓</span>
+              <span class="home-live-value" data-home-live-value>—</span>
+              <span class="home-live-label">Flags captured</span>
+            </li>
+            <li role="listitem" data-home-live="categories">
+              <span class="home-live-icon" aria-hidden="true">◇</span>
+              <span class="home-live-value" data-home-live-value>—</span>
+              <span class="home-live-label">Categories in play</span>
+            </li>
+            <li role="listitem" data-home-live="difficulty">
+              <span class="home-live-icon" aria-hidden="true">⌁</span>
+              <span class="home-live-value" data-home-live-value>—</span>
+              <span class="home-live-label">Difficulties armed</span>
+            </li>
+            <li role="listitem" data-home-live="teams">
+              <span class="home-live-icon" aria-hidden="true">⬡</span>
+              <span class="home-live-value" data-home-live-value>—</span>
+              <span class="home-live-label">Teams competing</span>
+            </li>
+          </ul>
+        </div>
+      </section>
 
       <div class="landing-access-notice" id="landing-access-notice" role="status" aria-live="polite" hidden>
         <span class="landing-notice-copy" id="landing-access-notice-text">Sign in to continue.</span>
         <button class="btn btn-primary btn-small" type="button" onclick="navGoAuth('login')">Sign in</button>
       </div>
 
-      <section class="home-section home-trust-section" id="landing-trust" aria-labelledby="landing-trust-heading">
+      <section class="home-section home-glance-section" id="landing-trust" aria-labelledby="landing-trust-heading">
         <div class="home-section-heading">
           <div>
             <div class="public-eyebrow">THE RANGE AT A GLANCE</div>
-            <h2 id="landing-trust-heading">Built for the way CTF practice actually works.</h2>
+            <h2 id="landing-trust-heading">Everything a practice range needs, nothing it doesn't.</h2>
           </div>
-          <p class="home-section-intro">A focused control surface for operators who want clear signals, repeatable practice, and a scoreboard that reflects the work.</p>
+          <p class="home-section-intro">Four decisions shape every solve here. They are visible on the surface, so you always know why a run scored the way it did.</p>
         </div>
-        <div class="stat-cards home-trust-grid" role="list" aria-label="CyberYardHub value propositions">
-          <div class="stat-card home-trust-card" role="listitem"><div class="sc-value">01</div><div class="sc-label">Local-first &amp; offline-capable</div></div>
-          <div class="stat-card home-trust-card" role="listitem"><div class="sc-value">02</div><div class="sc-label">Dynamic + static scoring</div></div>
-          <div class="stat-card home-trust-card" role="listitem"><div class="sc-value">03</div><div class="sc-label">First-blood bonuses</div></div>
-          <div class="stat-card home-trust-card" role="listitem"><div class="sc-value">04</div><div class="sc-label">Solo or team play</div></div>
+        <div class="home-glance-grid" role="list" aria-label="What the CyberYardHub range guarantees">
+          <article class="home-glance-card" role="listitem">
+            <span class="home-glance-mark" aria-hidden="true">01</span>
+            <div class="home-glance-body">
+              <h3>Local-first by default</h3>
+              <p>The whole range &mdash; challenges, sessions, submissions and standings &mdash; runs on your own machine. A club, classroom or security team can practise without handing production access to a novelty site.</p>
+            </div>
+            <span class="home-glance-tag">Offline-capable</span>
+          </article>
+          <article class="home-glance-card" role="listitem">
+            <span class="home-glance-mark" aria-hidden="true">02</span>
+            <div class="home-glance-body">
+              <h3>Scoring that stays fair</h3>
+              <p>Static challenges keep their published points. Dynamic challenges decay smoothly as the room solves them, with a published floor so a late solve is still worth your time.</p>
+            </div>
+            <span class="home-glance-tag">Static + dynamic</span>
+          </article>
+          <article class="home-glance-card" role="listitem">
+            <span class="home-glance-mark" aria-hidden="true">03</span>
+            <div class="home-glance-body">
+              <h3>Early insight is rewarded</h3>
+              <p>The first valid solve of a challenge takes a first-blood bonus, and blood points pay out to the reasoning that finds a path before the crowd does. Recorded once, by the server.</p>
+            </div>
+            <span class="home-glance-tag">First blood</span>
+          </article>
+          <article class="home-glance-card" role="listitem">
+            <span class="home-glance-mark" aria-hidden="true">04</span>
+            <div class="home-glance-body">
+              <h3>Solo or as a crew</h3>
+              <p>Work alone to sharpen your reasoning, or join a team with a rotating invite code. Team totals use the best result per challenge, so collaboration beats duplicate submissions.</p>
+            </div>
+            <span class="home-glance-tag">Solo or team</span>
+          </article>
         </div>
       </section>
 
-      <section class="home-section home-process-section" id="landing-how-it-works" aria-labelledby="landing-process-heading">
+      <section class="home-section home-loop-section" id="landing-how-it-works" aria-labelledby="landing-process-heading">
         <div class="home-section-heading">
           <div>
             <div class="public-eyebrow">THE SOLVE LOOP</div>
-            <h2 id="landing-process-heading">From account to scoreboard in four moves.</h2>
+            <h2 id="landing-process-heading">Account to scoreboard in four moves.</h2>
           </div>
-          <p class="home-section-intro">The path is short by design: establish an identity, choose a target, prove the flag, and let the board show the result.</p>
+          <p class="home-section-intro">The loop is deliberately short: establish an identity, choose a target, prove the flag, and let the board show the result.</p>
         </div>
-        <ol class="home-process-grid">
-          <li class="home-process-card clay-card"><span class="card-index">01</span><h3>Create your account</h3><p>Set up an operator profile so your solves, progress, and team activity have a home.</p></li>
-          <li class="home-process-card clay-card"><span class="card-index">02</span><h3>Pick a challenge</h3><p>Choose a published mission, read the brief, and work toward a clear objective.</p></li>
-          <li class="home-process-card clay-card"><span class="card-index">03</span><h3>Submit the flag</h3><p>Send the flag through the verified submission path and let the server check the result.</p></li>
-          <li class="home-process-card clay-card"><span class="card-index">04</span><h3>Climb the live scoreboard</h3><p>Watch valid solves move your standing as you compare solo progress with the wider range.</p></li>
+        <ol class="home-loop" role="list">
+          <li class="home-loop-step">
+            <div class="home-loop-marker" aria-hidden="true"><span>01</span></div>
+            <div class="home-loop-body">
+              <span class="home-loop-kicker">Identity</span>
+              <h3>Create your operator account</h3>
+              <p>One handle, one record. Your solves, XP, badges and team activity all hang off it, so progress survives every session.</p>
+            </div>
+          </li>
+          <li class="home-loop-step">
+            <div class="home-loop-marker" aria-hidden="true"><span>02</span></div>
+            <div class="home-loop-body">
+              <span class="home-loop-kicker">Target</span>
+              <h3>Pick a challenge that fits</h3>
+              <p>Filter the range by category and difficulty, read the brief, and work one clear objective instead of a loose list of targets.</p>
+            </div>
+          </li>
+          <li class="home-loop-step">
+            <div class="home-loop-marker" aria-hidden="true"><span>03</span></div>
+            <div class="home-loop-body">
+              <span class="home-loop-kicker">Proof</span>
+              <h3>Submit the flag</h3>
+              <p>Send it through the verified submission path. The server checks the target, your session, duplicate solves and rate limits in one pass.</p>
+            </div>
+          </li>
+          <li class="home-loop-step">
+            <div class="home-loop-marker" aria-hidden="true"><span>04</span></div>
+            <div class="home-loop-body">
+              <span class="home-loop-kicker">Result</span>
+              <h3>Climb the live scoreboard</h3>
+              <p>Watch valid solves move your standing in real time, and compare your run against solo operators and whole teams.</p>
+            </div>
+          </li>
         </ol>
       </section>
 
-      <section class="home-section home-feature-section" id="landing-features" aria-labelledby="landing-features-heading">
+      <section class="home-section home-os-section" id="landing-features" aria-labelledby="landing-features-heading">
         <div class="home-section-heading">
           <div>
             <div class="public-eyebrow">THE OPERATING SYSTEM</div>
-            <h2 id="landing-features-heading">Signals that make every solve count.</h2>
+            <h2 id="landing-features-heading">The mechanics, made visible.</h2>
           </div>
-          <p class="home-section-intro">CyberYardHub keeps the mechanics visible so practice stays fair, personal, and easy to repeat.</p>
+          <p class="home-section-intro">Six systems run underneath every solve. Knowing how they behave is the difference between guessing and reasoning.</p>
         </div>
-        <div class="home-feature-grid">
-          <article class="home-feature-card clay-card">
-            <div class="home-feature-top"><span class="home-category-icon" aria-hidden="true">↗</span><span class="card-index">01</span></div>
-            <h3>Dynamic + static scoring</h3>
-            <p>Static challenges keep their published points. Dynamic challenges decay as more operators solve them, with the floor keeping a late solve worthwhile.</p>
+        <div class="home-os-grid">
+          <article class="home-os-card">
+            <span class="home-os-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18V9M10 18V4M16 18v-6M22 18H2"/></svg></span>
+            <div class="home-os-copy">
+              <h3>Dynamic + static scoring</h3>
+              <p>Static challenges keep their published points. Dynamic challenges decay as more operators solve them, with a floor keeping a late solve worthwhile.</p>
+            </div>
+            <span class="home-os-index" aria-hidden="true">A1</span>
           </article>
-          <article class="home-feature-card clay-card">
-            <div class="home-feature-top"><span class="home-category-icon" aria-hidden="true">◆</span><span class="card-index">02</span></div>
-            <h3>First blood + blood points</h3>
-            <p>The first valid solve earns a first-blood bonus, with blood points rewarding the insight that finds a path early.</p>
+          <article class="home-os-card">
+            <span class="home-os-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3c2.5 3.2 6 6.1 6 10a6 6 0 0 1-12 0c0-3.9 3.5-6.8 6-10z"/></svg></span>
+            <div class="home-os-copy">
+              <h3>First blood + blood points</h3>
+              <p>The first valid solve takes a first-blood bonus, with blood points paying out to the insight that finds a path early.</p>
+            </div>
+            <span class="home-os-index" aria-hidden="true">A2</span>
           </article>
-          <article class="home-feature-card clay-card">
-            <div class="home-feature-top"><span class="home-category-icon" aria-hidden="true">◎</span><span class="card-index">03</span></div>
-            <h3>Team play with invite codes</h3>
-            <p>Create or join a team with a rotating invite code, then compare the crew on the team leaderboard using the best result per challenge.</p>
+          <article class="home-os-card">
+            <span class="home-os-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 5.5a3 3 0 0 1 0 5M18 20a5.6 5.6 0 0 0-2.2-4.4"/></svg></span>
+            <div class="home-os-copy">
+              <h3>Team play with invite codes</h3>
+              <p>Create or join a crew with a rotating invite code, then compare on the team board using the best result per challenge.</p>
+            </div>
+            <span class="home-os-index" aria-hidden="true">A3</span>
           </article>
-          <article class="home-feature-card clay-card">
-            <div class="home-feature-top"><span class="home-category-icon" aria-hidden="true">◇</span><span class="card-index">04</span></div>
-            <h3>Prerequisite-locked paths</h3>
-            <p>Let a challenge require a prior solve so missions can build on one another instead of becoming a loose list of targets.</p>
+          <article class="home-os-card">
+            <span class="home-os-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v2"/></svg></span>
+            <div class="home-os-copy">
+              <h3>Prerequisite-locked paths</h3>
+              <p>A challenge can require a prior solve, so missions build on one another instead of scattering into unrelated exercises.</p>
+            </div>
+            <span class="home-os-index" aria-hidden="true">A4</span>
           </article>
-          <article class="home-feature-card clay-card">
-            <div class="home-feature-top"><span class="home-category-icon" aria-hidden="true">⌁</span><span class="card-index">05</span></div>
-            <h3>Per-user dynamic flags</h3>
-            <p>When enabled, the server derives a distinct flag for each account and challenge, so a shared answer does not transfer.</p>
+          <article class="home-os-card">
+            <span class="home-os-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2M4 12c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2M4 17c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2"/></svg></span>
+            <div class="home-os-copy">
+              <h3>Per-user dynamic flags</h3>
+              <p>When enabled the server derives a distinct flag per account and challenge, so an answer someone shared with you simply will not work.</p>
+            </div>
+            <span class="home-os-index" aria-hidden="true">A5</span>
           </article>
-          <article class="home-feature-card clay-card">
-            <div class="home-feature-top"><span class="home-category-icon" aria-hidden="true">⟳</span><span class="card-index">06</span></div>
-            <h3>Isolated challenge instances</h3>
-            <p>Challenge instances are registered for operational visibility and can be reset when a run needs a clean, repeatable state.</p>
+          <article class="home-os-card">
+            <span class="home-os-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg></span>
+            <div class="home-os-copy">
+              <h3>Isolated challenge instances</h3>
+              <p>Instances are registered for operational visibility and can be reset whenever a run needs a clean, repeatable state.</p>
+            </div>
+            <span class="home-os-index" aria-hidden="true">A6</span>
           </article>
         </div>
       </section>
 
-      <section class="home-section home-stats-section" id="landing-live-stats" aria-labelledby="landing-stats-heading">
+      <section class="home-section home-pulse-section" id="landing-live-stats" aria-labelledby="landing-stats-heading">
         <div class="home-section-heading">
           <div>
             <div class="public-eyebrow">RANGE PULSE</div>
-            <h2 id="landing-stats-heading">Live stats, when the range is ready.</h2>
+            <h2 id="landing-stats-heading">What the range looks like right now.</h2>
           </div>
-          <p class="home-section-intro">This public view stays neutral until a connected range supplies a live snapshot.</p>
+          <p class="home-section-intro">Progress, coverage and the current front of the board. Numbers appear the moment a signed-in range supplies them, and refresh as the run moves.</p>
         </div>
-        <div class="home-stats home-live-stats" role="list" aria-label="Live range statistics placeholder">
-          <div class="home-stat" role="listitem"><span class="home-stat-icon" aria-hidden="true">◆</span><div><strong aria-label="Not available">—</strong><small>Challenges</small></div></div>
-          <div class="home-stat" role="listitem"><span class="home-stat-icon" aria-hidden="true">◎</span><div><strong aria-label="Not available">—</strong><small>Active players</small></div></div>
-          <div class="home-stat" role="listitem"><span class="home-stat-icon" aria-hidden="true">◇</span><div><strong aria-label="Not available">—</strong><small>Team entries</small></div></div>
-          <div class="home-stat" role="listitem"><span class="home-stat-icon" aria-hidden="true">↗</span><div><strong aria-label="Not available">—</strong><small>Submissions</small></div></div>
+        <div class="home-pulse">
+          <div class="home-pulse-panel" aria-labelledby="home-pulse-progress-heading">
+            <div class="home-pulse-head">
+              <h3 id="home-pulse-progress-heading">Range progress</h3>
+              <span class="home-pulse-state" id="home-pulse-state">Waiting for a signed-in range</span>
+            </div>
+            <div class="home-pulse-track" role="img" aria-labelledby="home-pulse-progress-caption">
+              <div class="home-pulse-fill" id="home-pulse-fill" style="width:0%"></div>
+            </div>
+            <p class="home-pulse-caption" id="home-pulse-progress-caption">Flags captured across every published challenge.</p>
+            <dl class="home-pulse-facts">
+              <div><dt>Published challenges</dt><dd id="home-pulse-challenges">&mdash;</dd></div>
+              <div><dt>Flags captured</dt><dd id="home-pulse-solved">&mdash;</dd></div>
+              <div><dt>Completion</dt><dd id="home-pulse-rate">&mdash;</dd></div>
+            </dl>
+          </div>
+          <div class="home-pulse-panel" aria-labelledby="home-pulse-board-heading">
+            <div class="home-pulse-head">
+              <h3 id="home-pulse-board-heading">Top of the board</h3>
+              <a class="text-link" href="#view-leaderboard" onclick="navGo('leaderboard'); return false;">Full scoreboard <span aria-hidden="true">&rarr;</span></a>
+            </div>
+            <ol class="home-pulse-board" id="home-pulse-board" aria-live="polite">
+              <li class="home-pulse-empty">Sign in to read the live standings.</li>
+            </ol>
+          </div>
         </div>
-        <p class="ph-sub home-stats-note">Placeholder values remain neutral until live range data is available.</p>
       </section>
 
       <section class="home-section home-context-section" id="landing-context" aria-labelledby="landing-context-heading">
@@ -305,9 +499,21 @@
           <p class="home-section-intro">When you are ready to go deeper, these spaces keep practice connected to people, events, and progress.</p>
         </div>
         <nav class="home-context-links" aria-label="More CyberYardHub spaces">
-          <a class="home-context-card" href="#view-community" onclick="navGo('community'); return false;"><span class="home-context-icon" aria-hidden="true">◎</span><span><strong>Community</strong><small>Trade notes, ask questions, and share responsible discoveries.</small></span><span class="home-context-arrow" aria-hidden="true">↗</span></a>
-          <a class="home-context-card" href="#view-events" onclick="navGo('events'); return false;"><span class="home-context-icon" aria-hidden="true">◇</span><span><strong>Events</strong><small>Find a live range, register, and follow the mission clock.</small></span><span class="home-context-arrow" aria-hidden="true">↗</span></a>
-          <a class="home-context-card" href="#view-badges" onclick="navGo('badges'); return false;"><span class="home-context-icon" aria-hidden="true">✦</span><span><strong>Your badges</strong><small>See the milestones you have earned from Profile.</small></span><span class="home-context-arrow" aria-hidden="true">↗</span></a>
+          <a class="home-context-card" href="#view-community" onclick="navGo('community'); return false;">
+            <span class="home-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></span>
+            <span class="home-context-body"><strong>Community</strong><small>Trade notes, ask better questions, and share responsible discoveries. No flags, no spoilers.</small></span>
+            <span class="home-context-arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="home-context-card" href="#view-events" onclick="navGo('events'); return false;">
+            <span class="home-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+            <span class="home-context-body"><strong>Events</strong><small>Find a live range, register a team, and follow the mission clock through to the closing ceremony.</small></span>
+            <span class="home-context-arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="home-context-card" href="#view-badges" onclick="navGo('badges'); return false;">
+            <span class="home-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5"/></svg></span>
+            <span class="home-context-body"><strong>Your badges</strong><small>Every milestone you have actually earned, with the criteria spelled out so nothing is a mystery.</small></span>
+            <span class="home-context-arrow" aria-hidden="true">&rarr;</span>
+          </a>
         </nav>
       </section>
 
@@ -441,41 +647,82 @@
           </section>
         </div>
       </div>
-      <section class="clay-card team-leaderboard-card" id="team-leaderboard-card" aria-labelledby="team-leaderboard-heading">
-        <div class="teams-card-head"><div><div class="public-eyebrow">THE YARD BOARD</div><h2 id="team-leaderboard-heading">Team leaderboard</h2></div><button class="btn btn-ghost btn-small" type="button" onclick="loadTeamLeaderboard()">Refresh</button></div>
-        <div class="team-leaderboard" id="team-leaderboard" aria-live="polite"><div class="challenge-extra-empty">Loading team standings…</div></div>
-      </section>
     </div>
   </section>
 
   <!-- ============ QUICK SUBMIT (protected) ============ -->
   <section id="view-submit-flag" class="view" aria-labelledby="quick-submit-heading">
     <div class="public-page quick-submit-page">
-      <div class="public-hero compact-public-hero">
-        <div class="public-eyebrow">FAST FLAG DESK</div>
-        <h1 id="quick-submit-heading">Submit a flag without losing your place.</h1>
-        <p>Choose a challenge, submit your result, and jump straight into the full investigation when you need the brief, hints, or files.</p>
+      <div class="public-hero compact-public-hero flagdesk-hero">
+        <div>
+          <div class="public-eyebrow">FLAG DESK</div>
+          <h1 id="quick-submit-heading">One desk. One target. One verdict.</h1>
+          <p>Lock onto a challenge, hand the server your flag, and get a straight answer &mdash; without leaving the run you are already in.</p>
+        </div>
+        <div class="flagdesk-steps" aria-hidden="true">
+          <span><b>1</b>Filter</span>
+          <span><b>2</b>Select</span>
+          <span><b>3</b>Submit</span>
+        </div>
       </div>
-      <div class="quick-submit-layout">
-        <section class="clay-card quick-submit-card" aria-labelledby="quick-form-heading">
-          <div class="teams-card-head"><div><div class="public-eyebrow">CHALLENGE SELECTOR</div><h2 id="quick-form-heading">Find the target</h2></div><span class="form-index">01</span></div>
-          <div class="quick-filter-grid">
-            <div class="field"><label for="quick-challenge-search">Search challenges</label><input id="quick-challenge-search" type="search" placeholder="Search by title…" autocomplete="off" oninput="onQuickChallengeSearch()"></div>
-            <div class="field"><label for="quick-category">Category</label><select id="quick-category" onchange="loadQuickSubmitChallenges()"><option value="all">All categories</option></select></div>
-            <div class="field"><label for="quick-difficulty">Difficulty</label><select id="quick-difficulty" onchange="loadQuickSubmitChallenges()"><option value="all">All difficulties</option></select></div>
+
+      <div class="flagdesk">
+        <section class="flagdesk-console" aria-labelledby="quick-form-heading">
+          <header class="flagdesk-head">
+            <div>
+              <div class="panel-kicker">TARGET SELECTOR</div>
+              <h2 id="quick-form-heading">Find the challenge</h2>
+            </div>
+            <span class="flagdesk-badge">Verified path</span>
+          </header>
+
+          <div class="flagdesk-filters">
+            <div class="field flagdesk-search">
+              <label for="quick-challenge-search">Search</label>
+              <input id="quick-challenge-search" type="search" placeholder="Search by title&hellip;" autocomplete="off" oninput="onQuickChallengeSearch()">
+            </div>
+            <div class="field">
+              <label for="quick-category">Category</label>
+              <select id="quick-category" onchange="loadQuickSubmitChallenges()"><option value="all">All categories</option></select>
+            </div>
+            <div class="field">
+              <label for="quick-difficulty">Difficulty</label>
+              <select id="quick-difficulty" onchange="loadQuickSubmitChallenges()"><option value="all">All difficulties</option></select>
+            </div>
           </div>
-          <div class="field quick-challenge-field"><label for="quick-challenge-select">Challenge</label><select id="quick-challenge-select" onchange="selectQuickChallenge(this.value)"><option value="">Loading challenges…</option></select></div>
+
+          <div class="field quick-challenge-field">
+            <label for="quick-challenge-select">Selected challenge</label>
+            <select id="quick-challenge-select" onchange="selectQuickChallenge(this.value)"><option value="">Loading challenges&hellip;</option></select>
+          </div>
+
           <div class="quick-challenge-preview" id="quick-challenge-preview" aria-live="polite"><div class="challenge-extra-empty">Select a challenge to see its mode and detail link.</div></div>
-          <div class="quick-submit-divider"></div>
-          <form id="quick-flag-form" onsubmit="handleQuickFlagSubmit(event)">
-            <div class="field"><label for="quick-flag-input">Flag</label><input id="quick-flag-input" type="text" maxlength="500" placeholder="CYBH{...}" autocomplete="off" spellcheck="false" required></div>
-            <button class="btn btn-primary btn-block" id="quick-flag-submit" type="submit">Submit Flag</button>
+
+          <form id="quick-flag-form" class="flagdesk-form" onsubmit="handleQuickFlagSubmit(event)">
+            <div class="flagdesk-input">
+              <span class="flagdesk-input-tag" aria-hidden="true">CYBH{&hellip;}</span>
+              <div class="field">
+                <label for="quick-flag-input">Your flag</label>
+                <input id="quick-flag-input" type="text" maxlength="500" placeholder="Paste the flag you derived" autocomplete="off" spellcheck="false" required>
+              </div>
+            </div>
+            <button class="btn btn-primary flagdesk-submit" id="quick-flag-submit" type="submit">Submit Flag</button>
           </form>
           <div class="quick-result" id="quick-submit-result" role="status" aria-live="polite" hidden></div>
         </section>
-        <aside class="quick-submit-aside">
-          <section class="clay-card quick-info-card"><div class="public-eyebrow">BEFORE YOU SUBMIT</div><h2>One target at a time.</h2><p>The server checks the selected challenge, your session, duplicate solves, and rate limits. Quick submit uses the same verified submission path as the full challenge view.</p><div class="quick-info-list"><span><b>Dynamic flags</b> use your personalized flag for this account.</span><span><b>Rate limits</b> protect the range from noisy retries.</span><span><b>Need context?</b> open the challenge detail for hints and files.</span></div></section>
-          <button class="btn btn-ghost btn-block" type="button" onclick="navGo('challenges')">Browse all challenges <span>↗</span></button>
+
+        <aside class="flagdesk-aside">
+          <section class="clay-card flagdesk-note">
+            <div class="panel-kicker">BEFORE YOU SUBMIT</div>
+            <h3>The same checks run either way.</h3>
+            <p>Quick submit and the full challenge view use one verified server path. The server resolves the selected challenge, your session, duplicate solves and rate limits in a single pass.</p>
+            <ul class="flagdesk-list">
+              <li><b>Dynamic flags</b> are derived per account, so a flag someone shared with you will not validate.</li>
+              <li><b>Rate limits</b> protect the range; a burst of retries can trigger a short lock.</li>
+              <li><b>Duplicate solves</b> never award points twice &mdash; a second correct flag confirms, it does not pay.</li>
+            </ul>
+          </section>
+          <button class="btn btn-ghost btn-block" type="button" onclick="navGo('challenges')">Browse all challenges <span aria-hidden="true">&rarr;</span></button>
         </aside>
       </div>
     </div>
@@ -554,12 +801,12 @@
               <span class="authx-check-box" aria-hidden="true"></span>
               <span>Keep me signed in</span>
             </label>
-            <button type="button" class="authx-link" onclick="goTo('forgot')">Forgot password?</button>
           </div>
 
           <button type="submit" class="authx-submit">Log in <span aria-hidden="true">&rarr;</span></button>
 
           <p class="authx-note">Your session is held in a signed, httpOnly cookie. Logging in never exposes credentials to this page.</p>
+          <p class="authx-note">Lost your password? This range runs self-hosted and offers no emailed recovery. Change it from <b>Settings</b> in any session you can still reach, or ask the local range owner to reset it for you.</p>
         </form>
       </div>
     </div>
@@ -678,123 +925,6 @@
     </div>
   </section>
 
-  <!-- ============ FORGOT PASSWORD ============ -->
-  <section id="view-forgot" class="view auth-view">
-    <div class="authx">
-      <aside class="authx-rail">
-        <span class="authx-rail-glow" aria-hidden="true"></span>
-        <span class="authx-rail-grid" aria-hidden="true"></span>
-        <div class="authx-rail-inner">
-          <button class="authx-back" type="button" onclick="navGo('home')"><span aria-hidden="true">&larr;</span> Back to the range</button>
-          <div class="authx-logo"><img src="assets/images/cyh-logo.png" alt=""></div>
-          <p class="authx-kicker">Account recovery</p>
-          <h1 class="authx-title">Lost the key<br>to your console?</h1>
-          <p class="authx-lede">Send a single-use recovery link to the address on your account and set a new password in under a minute.</p>
-          <ul class="authx-points">
-            <li><b>Single use</b><span>Each link is burned the moment it succeeds</span></li>
-            <li><b>30 minute window</b><span>Expired links can be reissued instantly</span></li>
-            <li><b>Silent by design</b><span>We never confirm whether an address exists</span></li>
-          </ul>
-        </div>
-      </aside>
-
-      <div class="authx-panel">
-        <form class="authx-form" id="forgot-form" novalidate onsubmit="handleForgotPassword(event)">
-          <header class="authx-head">
-            <span class="authx-step">Recovery</span>
-            <h2>Reset your password</h2>
-            <p>Remembered it? <a href="#" onclick="goTo('login'); return false;">Back to log in</a></p>
-          </header>
-
-          <div class="authx-alerts">
-            <div class="authx-alert authx-alert-error" id="forgot-alert-error" role="alert"><span class="authx-alert-icon" aria-hidden="true">!</span><span class="am"></span></div>
-            <div class="authx-alert authx-alert-success" id="forgot-alert-success" role="status"><span class="authx-alert-icon" aria-hidden="true">&check;</span><span class="am"></span></div>
-          </div>
-
-          <div class="authx-field" id="forgot-email-field">
-            <label for="forgot-email">Email address</label>
-            <div class="authx-input">
-              <svg class="authx-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>
-              <input id="forgot-email" type="email" placeholder="you@domain.com" autocomplete="email" spellcheck="false" maxlength="320" required>
-            </div>
-            <p class="authx-error">Enter a valid email address.</p>
-          </div>
-
-          <button type="submit" class="authx-submit">Send recovery link <span aria-hidden="true">&rarr;</span></button>
-
-          <p class="authx-note">For your security this screen never reveals whether an account exists on that address.</p>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ RESET PASSWORD ============ -->
-  <section id="view-reset-password" class="view auth-view">
-    <div class="authx">
-      <aside class="authx-rail">
-        <span class="authx-rail-glow" aria-hidden="true"></span>
-        <span class="authx-rail-grid" aria-hidden="true"></span>
-        <div class="authx-rail-inner">
-          <button class="authx-back" type="button" onclick="navGo('home')"><span aria-hidden="true">&larr;</span> Back to the range</button>
-          <div class="authx-logo"><img src="assets/images/cyh-logo.png" alt=""></div>
-          <p class="authx-kicker">Single use &middot; 30 minutes</p>
-          <h1 class="authx-title">Set a new<br>passphrase.</h1>
-          <p class="authx-lede">This link works once. Choosing a new password signs out every other session on your account.</p>
-          <ul class="authx-points">
-            <li><b>Argon2id hashing</b><span>Credentials are never stored in readable form</span></li>
-            <li><b>Session purge</b><span>All other devices are signed out on success</span></li>
-            <li><b>Logged in events</b><span>Recovery is recorded on your activity feed</span></li>
-          </ul>
-        </div>
-      </aside>
-
-      <div class="authx-panel">
-        <form class="authx-form" id="reset-password-form" novalidate onsubmit="handleResetPassword(event)">
-          <header class="authx-head">
-            <span class="authx-step">New credentials</span>
-            <h2>Choose a new password</h2>
-            <p>Link expired? <a href="#" onclick="goTo('forgot'); return false;">Request another</a></p>
-          </header>
-
-          <div class="authx-alerts">
-            <div class="authx-alert authx-alert-error" id="reset-alert-error" role="alert"><span class="authx-alert-icon" aria-hidden="true">!</span><span class="am"></span></div>
-            <div class="authx-alert authx-alert-success" id="reset-alert-success" role="status"><span class="authx-alert-icon" aria-hidden="true">&check;</span><span class="am"></span></div>
-          </div>
-
-          <div class="authx-field" id="reset-new-field">
-            <label for="reset-new">New password</label>
-            <div class="authx-input">
-              <svg class="authx-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
-              <input id="reset-new" type="password" placeholder="At least 8 characters" autocomplete="new-password" maxlength="128" required>
-              <button type="button" class="authx-reveal" onclick="togglePw('reset-new', this)" aria-label="Show password">
-                <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M6.6 6.7C4 8.3 2 12 2 12s4 7 11 7c2 0 3.7-.5 5.1-1.3M17.9 17.9C20.4 16.3 22 12 22 12s-1.6-2.8-4.3-4.8"/></svg>
-              </button>
-            </div>
-            <p class="authx-error">Use at least 8 characters, including a letter and a number.</p>
-          </div>
-
-          <div class="authx-field" id="reset-confirm-field">
-            <label for="reset-confirm">Confirm new password</label>
-            <div class="authx-input">
-              <svg class="authx-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
-              <input id="reset-confirm" type="password" placeholder="Repeat your new password" autocomplete="new-password" maxlength="128" required>
-              <button type="button" class="authx-reveal" onclick="togglePw('reset-confirm', this)" aria-label="Show password">
-                <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M6.6 6.7C4 8.3 2 12 2 12s4 7 11 7c2 0 3.7-.5 5.1-1.3M17.9 17.9C20.4 16.3 22 12 22 12s-1.6-2.8-4.3-4.8"/></svg>
-              </button>
-            </div>
-            <p class="authx-error">Passwords don't match.</p>
-          </div>
-
-          <button type="submit" class="authx-submit">Set new password <span aria-hidden="true">&rarr;</span></button>
-
-          <p class="authx-note">The recovery token is never written to browser storage and is never returned by the API.</p>
-        </form>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ EMAIL VERIFICATION ============ -->
   <section id="view-verify-email" class="view auth-view">
     <div class="authx">
@@ -840,55 +970,15 @@
   <section id="view-dashboard" class="view">
     <div class="dashboard-shell">
 
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="dash-avatar-initial">O</div></div>
-          <div class="umeta">
-            <div class="uname" id="dash-username-mini">operator</div>
-            <div class="uemail" id="dash-email-mini">you@domain.com</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            Overview
-          </a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-            Challenges
-          </a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-            Scoreboard
-          </a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-            Profile
-          </a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-            Settings
-          </a>
-        </nav>
-
-
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <div class="dash-welcome-row">
           <div class="dash-welcome">
+            <div class="public-eyebrow">OVERVIEW</div>
             <h1>Welcome back, <span id="dash-username">operator</span>.</h1>
             <p>Signed in as <span id="dash-email">you@domain.com</span></p>
           </div>
-          <div class="dash-date" id="dash-date">—</div>
-        </div>
-
-
-        <div class="panel-block profile-social-summary social-summary-grid">
-          <div><span>FOLLOWERS</span><strong id="profile-followers-count">0</strong><button class="btn btn-ghost btn-small" onclick="navGo('profile');loadProfileConnections('followers')">View</button></div><div><span>FOLLOWING</span><strong id="profile-following-count">0</strong><button class="btn btn-ghost btn-small" onclick="navGo('profile');loadProfileConnections('following')">View</button></div><div><span>FIRST BLOOD</span><strong id="profile-first-blood-summary">0</strong></div><div><span>LONGEST STREAK</span><strong id="profile-longest-summary">0</strong></div><div style="margin-top:12px"><button class="btn btn-ghost btn-small" onclick="navGo('profile');loadProfileConnections('blocked')">Manage blocked users</button></div>
+          <div class="dash-date" id="dash-date">&mdash;</div>
         </div>
 
         <div class="stat-cards">
@@ -964,41 +1054,15 @@
             </div>
 
             <div class="panel-block">
-              <div class="panel-head"><h3>Recent activity</h3><span class="ph-sub">Last 7 days</span></div>
-              <div class="activity-list" id="dash-activity-list">
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Solved <b>Baby SQLi</b> — Web Exploitation</div><div class="a-meta">2 hours ago</div></div>
-                  <div class="activity-pts">+150</div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Reached <b>rank #128</b> globally</div><div class="a-meta">Yesterday</div></div>
-                  <div class="activity-pts"></div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Solved <b>Weak Cipher</b> — Cryptography</div><div class="a-meta">2 days ago</div></div>
-                  <div class="activity-pts">+220</div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l2.6 6.6L21 10l-5 4.4L17.4 21 12 17.3 6.6 21 8 14.4 3 10l6.4-1.4z"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Earned achievement <b>First Blood</b></div><div class="a-meta">4 days ago</div></div>
-                  <div class="activity-pts"></div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Solved <b>Hidden in Plain Sight</b> — Forensics</div><div class="a-meta">6 days ago</div></div>
-                  <div class="activity-pts">+90</div>
-                </div>
-              </div>
+              <div class="panel-head"><h3>Recent activity</h3><span class="ph-sub">Latest first</span></div>
+              <div class="activity-list" id="dash-activity-list"><div class="notification-state">Loading activity&hellip;</div></div>
             </div>
           </div>
 
           <div>
             <div class="panel-block">
-              <div class="panel-head"><h3>Achievements</h3><span class="ph-sub" id="dash-badges-count">—</span></div>
-              <div class="achv-grid" id="dash-badges-list"><div class="challenge-extra-empty">Loading badges…</div></div>
+              <div class="panel-head"><h3>Achievements</h3><span class="ph-sub" id="dash-badges-count">&mdash;</span></div>
+              <div class="achv-grid" id="dash-badges-list"><div class="challenge-extra-empty">Loading badges&hellip;</div></div>
             </div>
 
             <div class="panel-block" style="margin-bottom:0;">
@@ -1006,15 +1070,15 @@
               <div class="quick-actions" style="grid-template-columns:1fr;">
                 <button class="qa-btn" onclick="navGo('challenges')">
                   <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg></div>
-                  <div><div class="qa-title">Browse challenges</div><div class="qa-sub">15 live now</div></div>
+                  <div><div class="qa-title">Browse challenges</div><div class="qa-sub">Filter the range by category and difficulty</div></div>
                 </button>
                 <button class="qa-btn" onclick="navGo('leaderboard')">
                   <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg></div>
-                  <div><div class="qa-title">View scoreboard</div><div class="qa-sub">See top operators</div></div>
+                  <div><div class="qa-title">View scoreboard</div><div class="qa-sub">See where your run stands</div></div>
                 </button>
-                <button class="qa-btn" onclick="openProfileEditor()">
+                <button class="qa-btn" onclick="navGo('profile')">
                   <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg></div>
-                  <div><div class="qa-title">Edit profile</div><div class="qa-sub">Update your operator card</div></div>
+                  <div><div class="qa-title">Open profile</div><div class="qa-sub">Coverage, progression and achievements</div></div>
                 </button>
               </div>
             </div>
@@ -1025,174 +1089,157 @@
   </section>
 
   <!-- ============ PROFILE (protected) ============ -->
-  <section id="view-profile" class="view">
+  <section id="view-profile" class="view" aria-labelledby="profile-heading">
     <div class="dashboard-shell">
-
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="profile-side-avatar-initial">O</div></div>
-          <div class="umeta">
-            <div class="uname" id="profile-side-username">operator</div>
-            <div class="uemail" id="profile-side-email">you@domain.com</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            Overview
-          </a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-            Challenges
-          </a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-            Scoreboard
-          </a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-            Profile
-          </a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-            Settings
-          </a>
-        </nav>
-
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <div class="dash-welcome-row">
           <div class="dash-welcome">
-            <h1>Profile</h1>
-            <p>Your public operator profile and progress overview.</p>
+            <div class="public-eyebrow">OPERATOR CARD</div>
+            <h1 id="profile-heading">Profile</h1>
+            <p>Your public operator card, your coverage, and the record of what you have actually earned.</p>
+          </div>
+          <div class="view-context-actions">
+            <button class="btn btn-primary btn-small" type="button" onclick="openProfileEditor()">Edit profile</button>
           </div>
         </div>
 
-        <div class="panel-block profile-hero">
-          <div class="profile-hero-left">
-            <div class="profile-avatar-lg"><div class="pc-lg" id="profile-hero-avatar-initial">O</div></div>
-            <div>
-              <div class="ph-name-row">
-                <h2 id="profile-hero-username">operator</h2>
-                <span class="p-tag accent">Active</span>
-              </div>
-              <div class="p-email" id="profile-hero-email">you@domain.com</div>
-              <div class="p-tags" style="margin-top:10px;">
-                <span class="p-tag">Joined <span id="profile-hero-since">—</span></span>
-                <span class="p-tag">Rank <span id="profile-hero-rank">—</span></span>
-                <span class="p-tag">Web · Crypto</span>
-              </div>
+        <!-- identity -->
+        <section class="profile-card" aria-labelledby="profile-hero-username">
+          <div class="profile-card-identity">
+            <div class="profile-avatar-xl"><span class="pc-xl" id="profile-hero-avatar-initial">O</span></div>
+            <div class="profile-card-names">
+              <span class="profile-card-status"><i aria-hidden="true"></i>Active operator</span>
+              <h2 id="profile-hero-username">operator</h2>
+              <p class="profile-card-email" id="profile-hero-email">you@domain.com</p>
+              <ul class="profile-card-meta">
+                <li><span>Joined</span><b id="profile-hero-since">&mdash;</b></li>
+                <li><span>Global rank</span><b id="profile-hero-rank">&mdash;</b></li>
+                <li><span>Handle</span><b id="profile-hero-handle">operator</b></li>
+              </ul>
+            </div>
+            <div class="profile-card-actions">
+              <button class="btn btn-ghost btn-small" type="button" onclick="loadProfileConnections('followers')">Followers <b id="profile-followers-count">0</b></button>
+              <button class="btn btn-ghost btn-small" type="button" onclick="loadProfileConnections('following')">Following <b id="profile-following-count">0</b></button>
+              <button class="btn btn-ghost btn-small" type="button" onclick="loadProfileConnections('blocked')">Blocked</button>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="openProfileEditor()">Edit Profile</button>
+          <p class="profile-card-bio" id="profile-bio">No bio added yet.</p>
+        </section>
+
+        <!-- headline numbers -->
+        <div class="profile-figures">
+          <div class="profile-figure">
+            <span class="profile-figure-label">Total points</span>
+            <strong class="profile-figure-value" id="profile-points">0</strong>
+            <span class="profile-figure-note" id="profile-points-delta">From solves</span>
+          </div>
+          <div class="profile-figure">
+            <span class="profile-figure-label">Global rank</span>
+            <strong class="profile-figure-value" id="profile-rank">&mdash;</strong>
+            <span class="profile-figure-note" id="profile-rank-delta">Across the range</span>
+          </div>
+          <div class="profile-figure">
+            <span class="profile-figure-label">Challenges solved</span>
+            <strong class="profile-figure-value" id="profile-solved">0</strong>
+            <span class="profile-figure-note" id="profile-solved-delta">Valid flags only</span>
+          </div>
+          <div class="profile-figure">
+            <span class="profile-figure-label">Current streak</span>
+            <strong class="profile-figure-value" id="profile-streak">0</strong>
+            <span class="profile-figure-note" id="profile-streak-delta">Consecutive days</span>
+          </div>
         </div>
 
+        <!-- editor -->
         <div class="panel-block profile-editor hidden" id="profile-editor">
           <div class="panel-head"><h3>Edit public profile</h3><span class="ph-sub">Only your public profile fields</span></div>
-          <div class="alert alert-error" id="profile-edit-error"><span class="ai">⚠</span><span class="am"></span></div>
-          <div class="alert alert-success" id="profile-edit-success"><span class="ai">✓</span><span class="am"></span></div>
+          <div class="alert alert-error" id="profile-edit-error"><span class="ai">&#9888;</span><span class="am"></span></div>
+          <div class="alert alert-success" id="profile-edit-success"><span class="ai">&check;</span><span class="am"></span></div>
           <form onsubmit="submitProfileEditor(event)">
             <div class="admin-form-grid">
               <div class="field"><label for="profile-edit-username">Username</label><input id="profile-edit-username" maxlength="32" pattern="[A-Za-z0-9_]{3,32}" required></div>
-              <div class="field"><label for="profile-edit-avatar">Avatar URL</label><input id="profile-edit-avatar" maxlength="500" type="url" placeholder="https://…"></div>
-              <div class="field" style="grid-column:1/-1"><label for="profile-edit-bio">Bio</label><textarea id="profile-edit-bio" rows="4" maxlength="500" placeholder="A short cybersecurity-focused bio…"></textarea></div>
+              <div class="field"><label for="profile-edit-avatar">Avatar URL</label><input id="profile-edit-avatar" maxlength="500" type="url" placeholder="https://&hellip;"></div>
+              <div class="field profile-editor-wide"><label for="profile-edit-bio">Bio</label><textarea id="profile-edit-bio" rows="4" maxlength="500" placeholder="A short cybersecurity-focused bio&hellip;"></textarea></div>
             </div>
             <div class="admin-form-actions"><button class="btn btn-primary" type="submit">Save profile</button><button class="btn btn-ghost" type="button" onclick="closeProfileEditor()">Cancel</button></div>
           </form>
         </div>
 
-        <div class="panel-block hidden" id="profile-connections-panel"><div class="panel-head"><h3 id="profile-connections-title">Connections</h3><button class="btn btn-ghost btn-small" onclick="document.getElementById('profile-connections-panel').classList.add('hidden')">Close</button></div><div id="profile-connections-list" class="admin-extra-list"></div></div>
-
-        <div class="stat-cards">
-          <div class="stat-card">
-            <div class="sc-top"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l2.6 6.6L21 10l-5 4.4L17.4 21 12 17.3 6.6 21 8 14.4 3 10l6.4-1.4z"/></svg></div><span class="sc-delta" id="profile-points-delta">From solves</span></div>
-            <div class="sc-value" id="profile-points">0</div>
-            <div class="sc-label">TOTAL POINTS</div>
+        <!-- connections drawer -->
+        <div class="panel-block profile-connections hidden" id="profile-connections-panel">
+          <div class="panel-head">
+            <h3 id="profile-connections-title">Connections</h3>
+            <button class="btn btn-ghost btn-small" type="button" onclick="closeProfileConnections()">Close</button>
           </div>
-          <div class="stat-card">
-            <div class="sc-top"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg></div><span class="sc-delta" id="profile-rank-delta">Global</span></div>
-            <div class="sc-value" id="profile-rank">—</div>
-            <div class="sc-label">GLOBAL RANK</div>
-          </div>
-          <div class="stat-card">
-            <div class="sc-top"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></div><span class="sc-delta" id="profile-solved-delta">Solved</span></div>
-            <div class="sc-value" id="profile-solved">0</div>
-            <div class="sc-label">CHALLENGES SOLVED</div>
-          </div>
-          <div class="stat-card">
-            <div class="sc-top"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div><span class="sc-delta" id="profile-streak-delta">Consecutive days</span></div>
-            <div class="sc-value" id="profile-streak">0</div>
-            <div class="sc-label">CURRENT STREAK</div>
-          </div>
+          <div id="profile-connections-list" class="admin-extra-list"></div>
         </div>
 
-        <div class="panel-block gamification-panel" id="profile-gamification-panel">
-          <div class="panel-head"><h3>XP & progression</h3><span class="ph-sub" id="profile-level-label">Level 1</span></div>
-          <div class="gamification-progress-head"><strong id="profile-xp-total">0 XP</strong><span id="profile-xp-next">100 XP to next level</span></div>
-          <div class="gamification-track"><div class="gamification-fill" id="profile-xp-fill" style="width:0%"></div></div>
-          <div class="gamification-metrics">
-            <div><span>STREAK</span><strong id="profile-gam-streak">0 days</strong></div>
-            <div><span>LONGEST</span><strong id="profile-longest-streak">0 days</strong></div>
-            <div><span>FIRST BLOOD</span><strong id="profile-first-bloods">0</strong></div>
-          </div>
-          <div class="gamification-achievements" id="profile-recent-achievements"></div><div class="gamification-progress-details" id="profile-gam-progress-details"></div>
-        </div>
-
-        <div class="dash-content-grid">
-          <div>
-            <div class="panel-block">
-              <div class="panel-head"><h3>About</h3><span class="ph-sub">Operator bio</span></div>
-              <p id="profile-bio" style="font-size:13.5px; color:var(--muted); line-height:1.7;">No bio added yet.</p>
-            </div>
-
-            <div class="panel-block">
-              <div class="panel-head"><h3>Skill progress</h3><span class="ph-sub">Published challenge coverage</span></div>
-              <div id="profile-category-progress" class="social-progress-list"></div>
-              <div class="panel-kicker" style="margin-top:18px;">DIFFICULTY PROGRESS</div>
-              <div id="profile-difficulty-progress" class="social-progress-list"></div>
-            </div>
-
-            <div class="panel-block">
-              <div class="panel-head"><h3>Public posts</h3><span class="ph-sub">Recent community activity</span></div>
-              <div id="profile-public-posts" class="community-posts"></div>
-            </div>
-
-            <div class="panel-block" style="margin-bottom:0;">
-              <div class="panel-head"><h3>Recent activity</h3><span class="ph-sub">Your account activity</span></div>
-              <div class="activity-list" id="profile-activity-list">
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Solved <b>Baby SQLi</b> — Web Exploitation</div><div class="a-meta">2 hours ago</div></div>
-                  <div class="activity-pts">+150</div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Reached <b>rank #128</b> globally</div><div class="a-meta">Yesterday</div></div>
-                  <div class="activity-pts"></div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Solved <b>Weak Cipher</b> — Cryptography</div><div class="a-meta">2 days ago</div></div>
-                  <div class="activity-pts">+220</div>
-                </div>
-                <div class="activity-item">
-                  <div class="activity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l2.6 6.6L21 10l-5 4.4L17.4 21 12 17.3 6.6 21 8 14.4 3 10l6.4-1.4z"/></svg></div>
-                  <div class="activity-body"><div class="a-title">Earned achievement <b>First Blood</b></div><div class="a-meta">4 days ago</div></div>
-                  <div class="activity-pts"></div>
-                </div>
+        <div class="profile-grid">
+          <div class="profile-column">
+            <!-- progression -->
+            <section class="profile-panel" id="profile-gamification-panel" aria-labelledby="profile-progress-heading">
+              <div class="profile-panel-head">
+                <h2 id="profile-progress-heading">Progression</h2>
+                <span class="profile-panel-tag" id="profile-level-label">Level 1</span>
               </div>
-            </div>
+              <div class="profile-xp">
+                <div class="profile-xp-head">
+                  <strong id="profile-xp-total">0 XP</strong>
+                  <span id="profile-xp-next">100 XP to next level</span>
+                </div>
+                <div class="profile-xp-track"><div class="profile-xp-fill" id="profile-xp-fill" style="width:0%"></div></div>
+              </div>
+              <div class="profile-tiles">
+                <div><span>Streak</span><strong id="profile-gam-streak">0 days</strong></div>
+                <div><span>Longest</span><strong id="profile-longest-streak">0 days</strong></div>
+                <div><span>First blood</span><strong id="profile-first-bloods">0</strong></div>
+              </div>
+              <div class="profile-achievements" id="profile-recent-achievements"></div>
+              <div class="profile-progress-details" id="profile-gam-progress-details"></div>
+            </section>
+
+            <!-- coverage -->
+            <section class="profile-panel" aria-labelledby="profile-coverage-heading">
+              <div class="profile-panel-head">
+                <h2 id="profile-coverage-heading">Coverage</h2>
+                <span class="profile-panel-tag">Published challenges</span>
+              </div>
+              <p class="profile-panel-label">By category</p>
+              <div id="profile-category-progress" class="social-progress-list"></div>
+              <p class="profile-panel-label">By difficulty</p>
+              <div id="profile-difficulty-progress" class="social-progress-list"></div>
+            </section>
+
+            <!-- activity -->
+            <section class="profile-panel" aria-labelledby="profile-activity-heading">
+              <div class="profile-panel-head">
+                <h2 id="profile-activity-heading">Recent activity</h2>
+                <a class="text-link" href="#view-activity" onclick="navGo('activity'); return false;">Full history <span aria-hidden="true">&rarr;</span></a>
+              </div>
+              <div class="activity-list" id="profile-activity-list"><div class="notification-state">Loading activity&hellip;</div></div>
+            </section>
           </div>
 
-          <div>
-            <div class="panel-block" style="margin-bottom:0;">
-              <div class="panel-head"><h3>Achievements</h3><div class="panel-head-actions"><span class="ph-sub" id="profile-badges-count">—</span><a class="text-link" href="#view-badges" onclick="navGo('badges'); return false;">View all badges <span>→</span></a></div></div>
-              <div class="achv-grid" id="profile-badges-list"><div class="challenge-extra-empty">Loading badges…</div></div>
-            </div>
+          <div class="profile-column">
+            <!-- achievements -->
+            <section class="profile-panel" aria-labelledby="profile-achievements-heading">
+              <div class="profile-panel-head">
+                <h2 id="profile-achievements-heading">Achievements</h2>
+                <a class="text-link" href="#view-badges" onclick="navGo('badges'); return false;">All badges <span aria-hidden="true">&rarr;</span></a>
+              </div>
+              <div class="achv-grid" id="profile-badges-list"><div class="challenge-extra-empty">Loading badges&hellip;</div></div>
+              <span class="sr-only" id="profile-badges-count">—</span>
+            </section>
+
+            <!-- posts -->
+            <section class="profile-panel" aria-labelledby="profile-posts-heading">
+              <div class="profile-panel-head">
+                <h2 id="profile-posts-heading">Public posts</h2>
+                <a class="text-link" href="#view-community" onclick="navGo('community'); return false;">Community <span aria-hidden="true">&rarr;</span></a>
+              </div>
+              <div id="profile-public-posts" class="community-posts"></div>
+            </section>
           </div>
         </div>
       </div>
@@ -1202,20 +1249,6 @@
   <!-- ============ BADGES (protected) ============ -->
   <section id="view-badges" class="view">
     <div class="dashboard-shell">
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini"><div class="avatar-ring"><div class="avatar-circle" id="badges-side-avatar">O</div></div><div class="umeta"><div class="uname" id="badges-side-username">operator</div><div class="uemail" id="badges-side-email">you@domain.com</div></div></div>
-        <div class="dash-sidebar-divider"></div>
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">Overview</a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">Challenges</a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">Scoreboard</a>
-          <a class="dash-nav-item" data-nav="badges" href="#" onclick="navGo('badges'); return false;">Badges</a>
-          <a class="dash-nav-item" data-nav="community" href="#" onclick="navGo('community'); return false;">Community</a><a class="dash-nav-item" data-nav="events" href="#" onclick="navGo('events'); return false;">Events</a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">Profile</a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">Settings</a>
-        </nav>
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
       <div class="dash-main">
         <div class="dash-welcome-row"><div class="dash-welcome"><h1>Badges</h1><p>Achievements earned through your progress on the range.</p></div></div>
         <div class="panel-block hidden" id="badge-detail-panel"><div class="panel-head"><h3 id="badge-detail-name">Badge</h3><span class="ph-sub" id="badge-detail-status">—</span></div><div class="phase8-badge-detail"><div class="phase8-badge-detail-icon" id="badge-detail-icon">STAR</div><p id="badge-detail-description">—</p></div></div>
@@ -1225,110 +1258,84 @@
   </section>
 
   <!-- ============ SCOREBOARD (protected) ============ -->
-  <section id="view-leaderboard" class="view">
+  <section id="view-leaderboard" class="view" aria-labelledby="scoreboard-heading">
     <div class="dashboard-shell">
-
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="lb-side-avatar-initial">O</div></div>
-          <div class="umeta">
-            <div class="uname" id="lb-side-username">operator</div>
-            <div class="uemail" id="lb-side-email">you@domain.com</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            Overview
-          </a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-            Challenges
-          </a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-            Scoreboard
-          </a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-            Profile
-          </a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-            Settings
-          </a>
-        </nav>
-
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <div class="dash-welcome-row">
           <div class="dash-welcome">
-            <h1>Scoreboard</h1>
-            <p>Top operators ranked by total points.</p>
+            <div class="public-eyebrow">STANDINGS</div>
+            <h1 id="scoreboard-heading">Scoreboard</h1>
+            <p>Every valid solve moves the board. Team totals use the best result per challenge, so collaboration beats duplicate work.</p>
           </div>
           <div class="scoreboard-mode-toggle" id="scoreboard-mode-toggle" role="group" aria-label="Scoreboard mode">
-            <button class="btn btn-small btn-primary" type="button" data-scoreboard-mode="solo" aria-pressed="true" onclick="setScoreboardMode('solo')">Solo</button>
-            <button class="btn btn-small btn-ghost" type="button" data-scoreboard-mode="team" aria-pressed="false" onclick="setScoreboardMode('team')">Team</button>
+            <button class="btn btn-small btn-primary" type="button" data-scoreboard-mode="solo" aria-pressed="true" onclick="setScoreboardMode('solo')">Solo operators</button>
+            <button class="btn btn-small btn-ghost" type="button" data-scoreboard-mode="team" aria-pressed="false" onclick="setScoreboardMode('team')">Teams</button>
           </div>
         </div>
 
-        <div id="lb-solo-content">
-        <div class="lb-podium" id="lb-podium"></div>
+        <div id="lb-solo-content" class="board">
+          <div class="board-podium" id="lb-podium" aria-label="Top three operators"></div>
 
-        <div class="panel-block lb-selected-user hidden" id="lb-selected-user">
-          <div class="lb-selected-head">
-            <div>
-              <div class="panel-kicker">SELECTED OPERATOR</div>
-              <div class="lb-selected-identity">
-                <div class="lb-avatar-sm" id="lb-selected-avatar">?</div>
-                <div class="lb-selected-name" id="lb-selected-username">—</div>
+          <div class="board-layout">
+            <section class="board-table-panel" aria-labelledby="lb-standings-heading">
+              <header class="board-table-head">
+                <h2 id="lb-standings-heading">Full standings</h2>
+                <p id="lb-standings-note">Ranked by total points.</p>
+              </header>
+              <div class="lb-table-head">
+                <span>RANK</span><span>PLAYER</span><span>POINTS</span><span>SOLVED</span><span>XP</span><span>LEVEL</span><span>FIRST BLOOD</span><span>STREAK</span>
               </div>
-            </div>
+              <div id="lb-table-body"></div>
+              <div class="lb-ellipsis hidden" id="lb-ellipsis">&hellip;</div>
+              <div class="lb-row lb-row-you hidden" id="lb-you-row">
+                <span class="lb-rank" id="lb-you-rank">&mdash;</span>
+                <div class="lb-player">
+                  <div class="lb-avatar-sm" id="lb-you-avatar">O</div>
+                  <span class="lb-player-name" id="lb-you-username">operator</span>
+                  <span class="p-tag accent lb-you-tag">You</span>
+                </div>
+                <span class="lb-pts-cell" id="lb-you-points">0</span>
+                <span class="lb-solved-cell" id="lb-you-solved">0</span>
+                <span class="lb-xp-cell" id="lb-you-xp">0</span>
+                <span class="lb-level-cell" id="lb-you-level">1</span>
+                <span class="lb-firstblood-cell" id="lb-you-first-bloods">0</span>
+                <span class="lb-streak-cell" id="lb-you-streak">0</span>
+              </div>
+            </section>
+
+            <aside class="lb-selected-user hidden" id="lb-selected-user" aria-labelledby="lb-selected-username">
+              <div class="lb-selected-identity">
+                <div class="lb-avatar" id="lb-selected-avatar">?</div>
+                <div>
+                  <div class="panel-kicker">SELECTED OPERATOR</div>
+                  <div class="lb-selected-name" id="lb-selected-username">&mdash;</div>
+                </div>
+              </div>
+              <p class="lb-selected-bio" id="lb-selected-bio">No bio added.</p>
+              <div class="lb-selected-public-meta"><span>Followers <b id="lb-selected-followers">0</b></span><span>Following <b id="lb-selected-following">0</b></span></div>
+              <div class="lb-selected-stats">
+                <div><span>RANK</span><strong id="lb-selected-rank">&mdash;</strong></div>
+                <div><span>POINTS</span><strong id="lb-selected-points">0</strong></div>
+                <div><span>SOLVED</span><strong id="lb-selected-solved">0</strong></div>
+                <div><span>XP</span><strong id="lb-selected-xp">0</strong></div>
+                <div><span>LEVEL</span><strong id="lb-selected-level">1</strong></div>
+                <div><span>FIRST BLOOD</span><strong id="lb-selected-first-bloods">0</strong></div>
+                <div><span>STREAK</span><strong id="lb-selected-streak">0</strong></div>
+              </div>
+              <div class="panel-kicker lb-selected-solves-kicker">RECENT SOLVES</div>
+              <div id="lb-selected-recent" class="lb-selected-recent"></div>
+              <div class="admin-form-actions lb-social-actions"><button class="btn btn-ghost btn-small" id="lb-follow-btn" onclick="toggleSelectedFollow()">Follow</button><button class="btn btn-ghost btn-small" id="lb-block-btn" onclick="toggleSelectedBlock()">Block</button></div>
+            </aside>
           </div>
-          <div class="admin-form-actions lb-social-actions"><button class="btn btn-ghost btn-small" id="lb-follow-btn" onclick="toggleSelectedFollow()">Follow</button><button class="btn btn-ghost btn-small" id="lb-block-btn" onclick="toggleSelectedBlock()">Block</button></div>
-          <div class="lb-selected-public-meta"><span id="lb-selected-bio">No bio added.</span><span>Followers <b id="lb-selected-followers">0</b> · Following <b id="lb-selected-following">0</b></span></div>
-          <div class="lb-selected-stats">
-            <div><span>RANK</span><strong id="lb-selected-rank">—</strong></div>
-            <div><span>POINTS</span><strong id="lb-selected-points">0</strong></div>
-            <div><span>SOLVED</span><strong id="lb-selected-solved">0</strong></div>
-            <div><span>XP</span><strong id="lb-selected-xp">0</strong></div>
-            <div><span>LEVEL</span><strong id="lb-selected-level">1</strong></div>
-            <div><span>FIRST BLOOD</span><strong id="lb-selected-first-bloods">0</strong></div>
-            <div><span>STREAK</span><strong id="lb-selected-streak">0</strong></div>
-          </div>
-          <div class="panel-kicker" style="margin-top:18px;">RECENT SOLVES</div>
-          <div id="lb-selected-recent" class="lb-selected-recent"></div>
         </div>
 
-        <div class="panel-block" id="lb-solo-table-panel" style="padding:0; margin-bottom:0;">
-          <div class="lb-table-head">
-            <span>RANK</span><span>PLAYER</span><span>POINTS</span><span>SOLVED</span><span>XP</span><span>LEVEL</span><span>FIRST BLOOD</span><span>STREAK</span>
-          </div>
-          <div id="lb-table-body"></div>
-          <div class="lb-ellipsis hidden" id="lb-ellipsis">⋯</div>
-          <div class="lb-row lb-row-you hidden" id="lb-you-row">
-            <span class="lb-rank" id="lb-you-rank">—</span>
-            <div class="lb-player">
-              <div class="lb-avatar-sm" id="lb-you-avatar">O</div>
-              <span class="lb-player-name" id="lb-you-username">operator</span>
-              <span class="p-tag accent" style="margin-left:4px; flex-shrink:0;">You</span>
-            </div>
-            <span class="lb-pts-cell" id="lb-you-points">0</span>
-            <span class="lb-solved-cell" id="lb-you-solved">0</span>
-            <span class="lb-xp-cell" id="lb-you-xp">0</span>
-            <span class="lb-level-cell" id="lb-you-level">1</span>
-            <span class="lb-firstblood-cell" id="lb-you-first-bloods">0</span>
-            <span class="lb-streak-cell" id="lb-you-streak">0</span>
-          </div>
-        </div>
-        </div>
-        <section class="panel-block team-scoreboard-panel hidden" id="team-scoreboard-panel" aria-live="polite">
-          <div class="panel-head"><h3>Team standings</h3><span class="ph-sub">Best solve per challenge</span></div>
-          <div id="team-scoreboard-list"><div class="challenge-extra-empty">Choose Team to load team standings.</div></div>
+        <section class="board-team hidden" id="team-scoreboard-panel" aria-live="polite" aria-labelledby="team-scoreboard-heading">
+          <header class="board-table-head">
+            <h2 id="team-scoreboard-heading">Team standings</h2>
+            <p>Best solve per challenge counts once for the whole crew.</p>
+          </header>
+          <div id="team-scoreboard-list"><div class="challenge-extra-empty">Choose Teams to load team standings.</div></div>
         </section>
       </div>
     </div>
@@ -1338,21 +1345,6 @@
   <!-- ============ EVENTS ============ -->
   <section id="view-events" class="view">
     <div class="dashboard-shell">
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini"><div class="avatar-ring"><div class="avatar-circle" id="events-side-avatar">O</div></div><div class="umeta"><div class="uname" id="events-side-username">operator</div><div class="uemail" id="events-side-email">you@domain.com</div></div></div>
-        <div class="dash-sidebar-divider"></div>
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">Overview</a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">Challenges</a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">Scoreboard</a>
-          <a class="dash-nav-item" data-nav="badges" href="#" onclick="navGo('badges'); return false;">Badges</a>
-          <a class="dash-nav-item" data-nav="community" href="#" onclick="navGo('community'); return false;">Community</a>
-          <a class="dash-nav-item" data-nav="events" href="#" onclick="navGo('events'); return false;">Events</a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">Profile</a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">Settings</a>
-        </nav>
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
       <div class="dash-main">
         <div class="dash-welcome-row"><div class="dash-welcome"><h1>CTF Events</h1><p>Discover competitions, register, and track event-specific progress.</p></div></div>
         <div class="panel-block event-toolbar">
@@ -1367,14 +1359,6 @@
   <!-- ============ EVENT DETAIL ============ -->
   <section id="view-event-detail" class="view">
     <div class="dashboard-shell">
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini"><div class="avatar-ring"><div class="avatar-circle" id="event-detail-side-avatar">O</div></div><div class="umeta"><div class="uname" id="event-detail-side-username">operator</div><div class="uemail" id="event-detail-side-email">you@domain.com</div></div></div>
-        <div class="dash-sidebar-divider"></div>
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">Overview</a><a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">Challenges</a><a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">Scoreboard</a><a class="dash-nav-item" data-nav="badges" href="#" onclick="navGo('badges'); return false;">Badges</a><a class="dash-nav-item" data-nav="community" href="#" onclick="navGo('community'); return false;">Community</a><a class="dash-nav-item" data-nav="events" href="#" onclick="navGo('events'); return false;">Events</a><a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">Profile</a><a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">Settings</a>
-        </nav>
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
       <div class="dash-main">
         <div class="dash-welcome-row"><div class="dash-welcome"><button class="btn btn-ghost btn-small" type="button" onclick="navGo('events')">← Events</button><h1 id="event-detail-name">Loading…</h1><p id="event-detail-short">Event information</p></div><div class="event-detail-actions"><span class="event-status-pill" id="event-detail-status">—</span><button class="btn btn-primary" id="event-register-btn" type="button" onclick="toggleEventRegistration()">Register</button></div></div>
         <div class="event-meta-grid" id="event-detail-meta"></div>
@@ -1390,14 +1374,6 @@
   <!-- ============ COMMUNITY ============ -->
   <section id="view-community" class="view">
     <div class="dashboard-shell">
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini"><div class="avatar-ring"><div class="avatar-circle" id="community-side-avatar">O</div></div><div class="umeta"><div class="uname" id="community-side-username">operator</div><div class="uemail" id="community-side-email">you@domain.com</div></div></div>
-        <div class="dash-sidebar-divider"></div>
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">Overview</a><a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">Challenges</a><a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">Scoreboard</a><a class="dash-nav-item" data-nav="badges" href="#" onclick="navGo('badges'); return false;">Badges</a><a class="dash-nav-item" data-nav="community" href="#" onclick="navGo('community'); return false;">Community</a><a class="dash-nav-item" data-nav="events" href="#" onclick="navGo('events'); return false;">Events</a><a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">Profile</a><a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">Settings</a>
-        </nav>
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
       <div class="dash-main">
         <div class="dash-welcome-row"><div class="dash-welcome"><h1>Community</h1><p>Share techniques, questions, and lessons with other operators.</p></div><button class="btn btn-primary" onclick="openCommunityComposer()">+ New post</button></div>
         <div class="panel-block community-toolbar">
@@ -1420,21 +1396,6 @@
   <!-- ============ SECURE OPERATOR CONSOLE (URL-GATED) ============ -->
   <section id="view-admin" class="view" aria-labelledby="admin-console-title">
     <div class="dashboard-shell ops-dashboard-shell">
-      <aside class="dash-sidebar ops-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="admin-side-avatar-initial">A</div></div>
-          <div class="umeta">
-            <div class="uname" id="admin-side-username">operator</div>
-            <div class="uemail" id="admin-side-email">—</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-        <div class="ops-sidebar-copy">
-          <span class="panel-kicker">SECURE OPERATOR CONSOLE</span>
-          <p>High-impact changes are identity-gated and audited by the server.</p>
-        </div>
-        <button class="btn btn-ghost" type="button" data-ops-action="logout">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <div class="dash-welcome-row">
@@ -1496,52 +1457,20 @@
   </section>
 
   <!-- ============ CHALLENGES LIST (protected) ============ -->
-  <section id="view-challenges" class="view">
+  <section id="view-challenges" class="view" aria-labelledby="challenges-heading">
     <div class="dashboard-shell">
-
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="chal-side-avatar-initial">O</div></div>
-          <div class="umeta">
-            <div class="uname" id="chal-side-username">operator</div>
-            <div class="uemail" id="chal-side-email">you@domain.com</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            Overview
-          </a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-            Challenges
-          </a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-            Scoreboard
-          </a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-            Profile
-          </a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-            Settings
-          </a>
-        </nav>
-
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <div class="dash-welcome-row">
           <div class="dash-welcome">
-            <h1>Challenges</h1>
-            <p>Pick a category, pick a difficulty, start solving.</p>
+            <div class="public-eyebrow">THE RANGE</div>
+            <h1 id="challenges-heading">Challenges</h1>
+            <p>Filter by category and difficulty, then start solving. Every option here is enforced by the API, not just the grid.</p>
           </div>
-          <div class="view-context-actions"><a class="btn btn-ghost btn-small" href="#view-community" onclick="navGo('community'); return false;">Open community <span>↗</span></a><a class="btn btn-ghost btn-small" href="#view-submit-flag" onclick="navGo('submit-flag'); return false;">Quick submit</a></div>
+          <div class="view-context-actions">
+            <a class="btn btn-ghost btn-small" href="#view-submit-flag" onclick="navGo('submit-flag'); return false;">Quick submit</a>
+            <a class="btn btn-ghost btn-small" href="#view-community" onclick="navGo('community'); return false;">Community <span aria-hidden="true">&rarr;</span></a>
+          </div>
         </div>
 
         <div class="chal-progress">
@@ -1549,23 +1478,62 @@
           <div class="chal-progress-label" id="chal-progress-label">0 / 0 solved</div>
         </div>
 
-        <div class="chal-toolbar">
-          <div class="chal-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input type="text" id="chal-search-input" aria-label="Search challenges" placeholder="Search challenges…" oninput="onChallengeFilterChange()">
-          </div>
-          <div class="filter-row" id="chal-category-filters"></div>
-          <div class="filter-row" id="chal-difficulty-filters"></div>
-          <select id="chal-solved-filter" aria-label="Filter challenges by solve status" class="chal-select" onchange="setChallengeFilter('solved', this.value)">
-            <option value="all">All</option><option value="unsolved">Unsolved</option><option value="solved">Solved</option>
-          </select>
-          <select id="chal-sort" aria-label="Sort challenges" class="chal-select" onchange="setChallengeFilter('sort', this.value)">
-            <option value="newest">Newest</option><option value="oldest">Oldest</option><option value="points_desc">Highest points</option><option value="points_asc">Lowest points</option><option value="solves_desc">Most solved</option><option value="title_asc">Title A–Z</option>
-          </select>
-        </div>
+        <div class="range-browser">
+          <!-- Real filter rail: every control below maps directly to a
+               challenge-list query parameter. -->
+          <aside class="range-filters" id="range-filters" aria-label="Filter challenges">
+            <div class="range-filters-head">
+              <h2>Filters</h2>
+              <button class="btn btn-ghost btn-small" type="button" id="range-filters-reset" onclick="resetChallengeFilters()">Reset</button>
+            </div>
 
-        <div class="chal-grid" id="chal-grid"></div>
-        <div id="chal-pagination" class="challenge-pagination"></div>
+            <div class="range-filter-group">
+              <label class="range-filter-label" for="chal-search-input">Search</label>
+              <div class="range-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="search" id="chal-search-input" placeholder="Title or keyword&hellip;" autocomplete="off" oninput="onChallengeFilterChange()">
+              </div>
+            </div>
+
+            <fieldset class="range-filter-group">
+              <legend class="range-filter-label">Category</legend>
+              <div class="range-filter-list" id="chal-category-filters"></div>
+            </fieldset>
+
+            <fieldset class="range-filter-group">
+              <legend class="range-filter-label">Difficulty</legend>
+              <div class="range-filter-list" id="chal-difficulty-filters"></div>
+            </fieldset>
+
+            <fieldset class="range-filter-group">
+              <legend class="range-filter-label">Solve status</legend>
+              <div class="range-filter-list range-filter-list-inline" id="chal-solved-filters"></div>
+            </fieldset>
+
+            <div class="range-filter-group">
+              <label class="range-filter-label" for="chal-sort">Sort by</label>
+              <select id="chal-sort" class="chal-select" onchange="setChallengeFilter('sort', this.value)">
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="points_desc">Highest points</option>
+                <option value="points_asc">Lowest points</option>
+                <option value="solves_desc">Most solved</option>
+                <option value="title_asc">Title A&ndash;Z</option>
+              </select>
+            </div>
+
+            <div class="range-filter-summary" id="range-filter-summary" role="status" aria-live="polite">&mdash;</div>
+          </aside>
+
+          <div class="range-results">
+            <div class="range-results-head">
+              <h2>Results</h2>
+              <div class="range-active-filters" id="chal-active-filters" aria-live="polite"></div>
+            </div>
+            <div class="chal-grid" id="chal-grid"></div>
+            <div id="chal-pagination" class="challenge-pagination"></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -1574,41 +1542,6 @@
   <section id="view-challenge-detail" class="view">
     <div class="dashboard-shell">
 
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="cd-side-avatar-initial">O</div></div>
-          <div class="umeta">
-            <div class="uname" id="cd-side-username">operator</div>
-            <div class="uemail" id="cd-side-email">you@domain.com</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            Overview
-          </a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-            Challenges
-          </a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-            Scoreboard
-          </a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-            Profile
-          </a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-            Settings
-          </a>
-        </nav>
-
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <button class="back-link" onclick="goToChallenges()">
@@ -1686,63 +1619,11 @@
     </div>
   </section>
 
-  <!-- ============ NOTIFICATIONS (protected) ============ -->
-  <section id="view-notifications" class="view">
-    <div class="dashboard-shell">
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini"><div class="avatar-ring"><div class="avatar-circle" id="notifications-side-avatar">O</div></div><div class="umeta"><div class="uname" id="notifications-side-username">operator</div><div class="uemail" id="notifications-side-email">you@domain.com</div></div></div>
-        <div class="dash-sidebar-divider"></div>
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">Overview</a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">Challenges</a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">Scoreboard</a>
-          <a class="dash-nav-item" data-nav="badges" href="#" onclick="navGo('badges'); return false;">Badges</a>
-          <a class="dash-nav-item" data-nav="community" href="#" onclick="navGo('community'); return false;">Community</a><a class="dash-nav-item" data-nav="events" href="#" onclick="navGo('events'); return false;">Events</a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">Profile</a>
-          <a class="dash-nav-item" data-nav="notifications" href="#" onclick="navGo('notifications'); return false;">Notifications <span id="notifications-side-count" class="notification-count hidden">0</span></a>
-          <a class="dash-nav-item" data-nav="activity" href="#" onclick="navGo('activity'); return false;">Activity</a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">Settings</a>
-        </nav>
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
-      <div class="dash-main">
-        <div class="dash-welcome-row"><div class="dash-welcome"><h1>Notifications</h1><p>Security, challenge and community updates for your account.</p></div><button type="button" class="btn btn-ghost" id="notifications-read-all" onclick="markAllNotificationsReadFromUI()">Mark all read</button></div>
-        <div class="notification-toolbar panel-block">
-          <div class="notification-filter-pills" id="notification-filter-pills">
-            <button type="button" class="btn btn-small btn-primary" data-read-filter="all" onclick="setNotificationFilter('all')">All</button>
-            <button type="button" class="btn btn-small btn-ghost" data-read-filter="unread" onclick="setNotificationFilter('unread')">Unread</button>
-            <button type="button" class="btn btn-small btn-ghost" data-read-filter="read" onclick="setNotificationFilter('read')">Read</button>
-          </div>
-        </div>
-        <div class="panel-block notification-panel">
-          <div id="notifications-list" class="notification-list"><div class="notification-state">Loading notifications…</div></div>
-          <div id="notifications-pagination" class="challenge-pagination"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ ACTIVITY (protected) ============ -->
-  <section id="view-activity" class="view">
+  <section id="view-activity" class="view" aria-labelledby="activity-heading">
     <div class="dashboard-shell">
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini"><div class="avatar-ring"><div class="avatar-circle" id="activity-side-avatar">O</div></div><div class="umeta"><div class="uname" id="activity-side-username">operator</div><div class="uemail" id="activity-side-email">you@domain.com</div></div></div>
-        <div class="dash-sidebar-divider"></div>
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">Overview</a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">Challenges</a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">Scoreboard</a>
-          <a class="dash-nav-item" data-nav="badges" href="#" onclick="navGo('badges'); return false;">Badges</a>
-          <a class="dash-nav-item" data-nav="community" href="#" onclick="navGo('community'); return false;">Community</a><a class="dash-nav-item" data-nav="events" href="#" onclick="navGo('events'); return false;">Events</a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">Profile</a>
-          <a class="dash-nav-item" data-nav="notifications" href="#" onclick="navGo('notifications'); return false;">Notifications</a>
-          <a class="dash-nav-item" data-nav="activity" href="#" onclick="navGo('activity'); return false;">Activity</a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">Settings</a>
-        </nav>
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
       <div class="dash-main">
-        <div class="dash-welcome-row"><div class="dash-welcome"><h1>Activity</h1><p>A chronological record of meaningful actions on your account.</p></div></div>
+        <div class="dash-welcome-row"><div class="dash-welcome"><div class="public-eyebrow">AUDIT TRAIL</div><h1 id="activity-heading">Activity</h1><p>A chronological record of meaningful actions on your account.</p></div></div>
         <div class="panel-block activity-page-panel">
           <div id="activity-list" class="activity-list activity-page-list"><div class="notification-state">Loading activity…</div></div>
           <div id="activity-pagination" class="challenge-pagination"></div>
@@ -1752,50 +1633,16 @@
   </section>
 
   <!-- ============ SETTINGS (protected) ============ -->
-  <section id="view-settings" class="view">
+  <section id="view-settings" class="view" aria-labelledby="settings-heading">
     <div class="dashboard-shell">
 
-      <aside class="dash-sidebar">
-        <div class="dash-user-mini">
-          <div class="avatar-ring"><div class="avatar-circle" id="settings-side-avatar-initial">O</div></div>
-          <div class="umeta">
-            <div class="uname" id="settings-side-username">operator</div>
-            <div class="uemail" id="settings-side-email">you@domain.com</div>
-          </div>
-        </div>
-        <div class="dash-sidebar-divider"></div>
-
-        <nav class="dash-nav">
-          <a class="dash-nav-item" data-nav="dashboard" href="#" onclick="navGo('dashboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            Overview
-          </a>
-          <a class="dash-nav-item" data-nav="challenges" href="#" onclick="navGo('challenges'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/></svg>
-            Challenges
-          </a>
-          <a class="dash-nav-item" data-nav="leaderboard" href="#" onclick="navGo('leaderboard'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M12 19V4M20 19v-6"/></svg>
-            Scoreboard
-          </a>
-          <a class="dash-nav-item" data-nav="profile" href="#" onclick="navGo('profile'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.1-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-            Profile
-          </a>
-          <a class="dash-nav-item" data-nav="settings" href="#" onclick="navGo('settings'); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4.4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.6a7 7 0 0 0 .1-1.2z"/></svg>
-            Settings
-          </a>
-        </nav>
-
-        <button class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-      </aside>
 
       <div class="dash-main">
         <div class="dash-welcome-row">
           <div class="dash-welcome">
-            <h1>Settings</h1>
-            <p>Manage your account, security, and preferences.</p>
+            <div class="public-eyebrow">ACCOUNT</div>
+            <h1 id="settings-heading">Settings</h1>
+            <p>Manage your account, security, and appearance.</p>
           </div>
         </div>
 
@@ -1891,35 +1738,6 @@
           <div class="alert alert-success" id="settings-theme-alert-success" style="margin-top:18px; margin-bottom:0;"><span class="ai">✓</span><span class="am"></span></div>
         </div>
 
-        <div class="panel-block">
-          <div class="panel-head"><h3>Notifications</h3><span class="ph-sub">Local preferences</span></div>
-          <p class="settings-help">These toggles are stored on this device only. No emails are sent yet.</p>
-          <div class="settings-toggle-list">
-            <label class="settings-toggle">
-              <div>
-                <div class="settings-toggle-title">Challenge updates</div>
-                <div class="settings-toggle-sub">Reminders about new and unsolved challenges</div>
-              </div>
-              <input type="checkbox" id="settings-notif-challenges" onchange="saveNotificationPreferences()">
-            </label>
-            <label class="settings-toggle">
-              <div>
-                <div class="settings-toggle-title">Scoreboard alerts</div>
-                <div class="settings-toggle-sub">Notify when your rank changes</div>
-              </div>
-              <input type="checkbox" id="settings-notif-leaderboard" onchange="saveNotificationPreferences()">
-            </label>
-            <label class="settings-toggle">
-              <div>
-                <div class="settings-toggle-title">Product news</div>
-                <div class="settings-toggle-sub">Early access notes and platform announcements</div>
-              </div>
-              <input type="checkbox" id="settings-notif-product" onchange="saveNotificationPreferences()">
-            </label>
-          </div>
-          <div class="alert alert-success" id="settings-notif-alert-success" style="margin-top:18px; margin-bottom:0;"><span class="ai">✓</span><span class="am"></span></div>
-        </div>
-
         <div class="panel-block" style="margin-bottom:0;">
           <div class="panel-head"><h3>Session</h3><span class="ph-sub">Sign out of this device</span></div>
           <p class="settings-help">Logging out clears your local session. Your account and saved preferences stay on this browser.</p>
@@ -1935,16 +1753,28 @@
 
 </main>
 
+<!-- One footer for the whole platform. It is identical for signed-in and
+     signed-out visitors: every destination is always listed, and account-only
+     destinations route through the existing guard, which asks a guest to sign
+     in instead of silently disappearing from the navigation. -->
 <footer id="site-footer" class="home-footer site-footer">
   <div class="site-footer-inner">
     <div class="site-footer-brand-column">
       <div class="site-footer-brand"><span class="site-footer-logo"><img src="assets/images/cyh-logo.png" alt="CyberYardHub"></span><span><strong>CyberYardHub</strong><small>Secure today. Stronger tomorrow.</small></span></div>
       <p class="site-footer-mission">A local-first CTF engine for building sharper security instincts through isolated, hands-on practice.</p>
       <span class="site-footer-status"><i aria-hidden="true"></i> Practice range online</span>
+      <div class="site-footer-cta">
+        <button class="btn btn-primary btn-small" type="button" data-nav-guest-action onclick="navGoAuth('signup')">Create free account</button>
+        <button class="btn btn-ghost btn-small" type="button" data-nav-guest-action onclick="navGoAuth('login')">Log in</button>
+      </div>
+      <div class="site-footer-cta hidden" data-nav-authed-cta>
+        <button class="btn btn-ghost btn-small" type="button" onclick="navGo('dashboard')">Go to overview</button>
+        <button class="btn btn-ghost btn-small" type="button" onclick="handleLogout()">Log out</button>
+      </div>
     </div>
-    <div class="site-footer-column"><h2>Quick links</h2><nav aria-label="Footer quick links" class="site-footer-links"><a href="#" onclick="navGo('home'); return false;">Home</a><a href="#" onclick="navGo('about'); return false;">About</a><a href="#" onclick="navGo('rules'); return false;">Rules</a><a href="#" data-nav="teams" data-nav-auth-only onclick="navGo('teams'); return false;">Teams</a><a href="#" data-nav="challenges" data-nav-auth-only onclick="navGo('challenges'); return false;">Challenges</a><a href="#" data-nav="leaderboard" data-nav-auth-only onclick="navGo('leaderboard'); return false;">Scoreboard</a><a href="#" data-nav="submit-flag" data-nav-auth-only onclick="navGo('submit-flag'); return false;">Submit Flag</a></nav></div>
-    <div class="site-footer-column"><h2>Participation</h2><nav aria-label="Footer participation links" class="site-footer-links"><a href="#" data-nav="dashboard" data-nav-auth-only onclick="navGo('dashboard'); return false;">Dashboard</a><a href="#" data-nav="profile" data-nav-auth-only onclick="navGo('profile'); return false;">Profile</a><a href="#" data-nav="badges" data-nav-auth-only onclick="navGo('badges'); return false;">Badges</a><a href="#" data-nav="events" data-nav-auth-only onclick="navGo('events'); return false;">Events</a></nav></div>
-    <div class="site-footer-column"><h2>Platform info</h2><div class="site-footer-info"><span><b>Deployment</b> Local-first / self-hosted</span><span><b>Version</b> 0.1 · range build</span><span><b>Range contact</b> operations@cyberyardhub.local</span></div></div>
+    <div class="site-footer-column"><h2>Explore</h2><nav aria-label="Footer explore links" class="site-footer-links"><a href="#" data-nav="home" onclick="navGo('home'); return false;">Home</a><a href="#" data-nav="about" onclick="navGo('about'); return false;">About</a><a href="#" data-nav="rules" onclick="navGo('rules'); return false;">Rules</a><a href="#" data-nav="challenges" onclick="navGo('challenges'); return false;">Challenges</a><a href="#" data-nav="leaderboard" onclick="navGo('leaderboard'); return false;">Scoreboard</a><a href="#" data-nav="submit-flag" onclick="navGo('submit-flag'); return false;">Submit Flag</a></nav></div>
+    <div class="site-footer-column"><h2>Play</h2><nav aria-label="Footer play links" class="site-footer-links"><a href="#" data-nav="teams" onclick="navGo('teams'); return false;">Teams</a><a href="#" data-nav="events" onclick="navGo('events'); return false;">Events</a><a href="#" data-nav="community" onclick="navGo('community'); return false;">Community</a><a href="#" data-nav="badges" onclick="navGo('badges'); return false;">Badges</a><a href="#" data-nav="activity" onclick="navGo('activity'); return false;">Activity</a></nav></div>
+    <div class="site-footer-column"><h2>Your account</h2><nav aria-label="Footer account links" class="site-footer-links"><a href="#" data-nav="dashboard" onclick="navGo('dashboard'); return false;">Dashboard</a><a href="#" data-nav="profile" onclick="navGo('profile'); return false;">Profile</a><a href="#" data-nav="settings" onclick="navGo('settings'); return false;">Settings</a></nav><div class="site-footer-info"><span><b>Deployment</b> Local-first / self-hosted</span><span><b>Version</b> 0.1 · range build</span><span><b>Range contact</b> operations@cyberyardhub.local</span></div></div>
   </div>
   <div class="site-footer-bottom"><span>© <span id="footer-year">2026</span> CyberYardHub</span><span>Built for local CTF play.</span></div>
 </footer>

@@ -100,17 +100,23 @@ during this reorganization — only *where* the code lives.
 
 ### Authentication system
 - **Login** — email/password, inline validation, password show/hide toggle,
-  "keep me signed in" checkbox, forgot-password link, banner-level
-  success/error alerts.
+  "keep me signed in" checkbox, banner-level error alerts. A successful
+  login navigates straight to the dashboard with no success banner.
 - **Register** — username/email/password/confirm, password toggles on both
-  fields, terms checkbox, per-field inline validation errors.
-- **Forgot password** — email-only form, deliberately generic confirmation
-  message regardless of whether the account exists (no email enumeration).
-- **Logout** — clears the stored session, returns to homepage, resets nav
-  state everywhere.
-- Accounts and sessions persist via `window.storage` (see Architecture).
-  Passwords are hashed (SHA-256) before storage — see the security caveat in
-  section 2 and section 6.
+  fields, terms checkbox, per-field inline validation errors, live strength
+  meter and requirement checklist.
+- **No emailed password recovery** — the "forgot password" and "reset
+  password" screens, the `/api/auth/forgot-password` and
+  `/api/auth/reset-password` endpoints, the `PasswordResetToken` issuance
+  path and the reset email template were all removed. A self-hosted range
+  does not need an unauthenticated credential-mutation surface, and
+  `security:audit` now asserts both the frontend and the API stay that way.
+  Passwords are still changed from an authenticated session via Settings →
+  Change password (which revokes every other session).
+- **Logout** — clears the server session, returns to the landing page, and
+  resets nav state everywhere.
+- Accounts and sessions persist via the server session (httpOnly cookie);
+  see Architecture. Passwords are hashed with Argon2id server-side.
 
 ### Navigation system
 - One global navbar used across every view: logo, product links (Home,

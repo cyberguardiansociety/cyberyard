@@ -53,19 +53,6 @@ function link(path: string, token: string): string {
   return `${base}/#${path}?token=${encodeURIComponent(token)}`;
 }
 
-export async function sendPasswordResetEmail(email: string, token: string): Promise<EmailSendResult> {
-  const reason = skipReason();
-  if (reason) return logSkip(reason);
-  await transporter().sendMail({
-    from: env.SMTP_FROM,
-    to: email,
-    subject: 'Reset your CyberYardHub password',
-    text: `A password reset was requested for your CyberYardHub account. Reset your password here: ${link('reset-password', token)}\n\nThis link expires in 30 minutes and can only be used once. If you did not request this, you can ignore this email.`,
-    html: `<div style="background:#070a13;color:#eef1ff;padding:32px;font-family:Arial,sans-serif"><h2>Reset your CyberYardHub password</h2><p>A password reset was requested for your account.</p><p><a href="${link('reset-password', token)}" style="display:inline-block;padding:12px 18px;background:#8b5cf6;color:#fff;text-decoration:none;border-radius:8px">Reset password</a></p><p style="color:#aab0c5">This link expires in 30 minutes and can only be used once. If you did not request this, you can ignore this email.</p></div>`,
-  });
-  return { skipped: false };
-}
-
 export async function sendEmailVerificationEmail(email: string, token: string): Promise<EmailSendResult> {
   const reason = skipReason();
   if (reason) return logSkip(reason);

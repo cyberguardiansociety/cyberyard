@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/ApiError';
 
-type Action = 'passwordReset' | 'verifyEmail' | 'passwordChange';
+type Action = 'verifyEmail' | 'passwordChange';
 const WINDOW_MS = 15 * 60 * 1000;
-const LIMITS: Record<Action, number> = { passwordReset: 5, verifyEmail: 5, passwordChange: 5 };
+const LIMITS: Record<Action, number> = { verifyEmail: 5, passwordChange: 5 };
 const buckets = new Map<string, number[]>();
 const MAX_BUCKETS = 20_000;
 
@@ -20,7 +20,10 @@ export function accountSecurityRateLimit(action: Action) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const now = Date.now();
     cleanup(now);
-    const identity = (action !== 'passwordReset' ? req.user?.id : null) || req.ip || 'unknown';
+    /* Every remaining action is authenticated, so the account is the natural
+       limiter key; the IP still covers unauthenticated calls that slip past
+       requireAuth (e.g. a bad/expired session). */
+    const identity = req.user?.id || req.ip || 'unknown';
     const key = `${action}:${identity}`;
     const existing = buckets.get(key);
     let recent: number[];

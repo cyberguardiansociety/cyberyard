@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, verifyEmailSchema, changePasswordSchema, sessionIdSchema } from '../validation/auth.schema';
-import { registerUser, loginUser, requestPasswordReset, completePasswordReset, verifyEmail, resendVerification, changePassword, listSessions, revokeOneSession, revokeAllOtherSessions } from '../services/auth.service';
+import { registerSchema, loginSchema, verifyEmailSchema, changePasswordSchema, sessionIdSchema } from '../validation/auth.schema';
+import { registerUser, loginUser, verifyEmail, resendVerification, changePassword, listSessions, revokeOneSession, revokeAllOtherSessions } from '../services/auth.service';
 import { destroySession } from '../services/session.service';
 import { setSessionCookie, clearSessionCookie } from '../utils/cookies';
 import { env } from '../config/env';
@@ -59,18 +59,6 @@ export async function logout(req: Request, res: Response): Promise<void> {
 }
 
 export async function me(req: Request, res: Response): Promise<void> { res.status(200).json({ user: req.user }); }
-
-export async function forgotPassword(req: Request, res: Response): Promise<void> {
-  const { email } = forgotPasswordSchema.parse(req.body);
-  await requestPasswordReset(email, requestMeta(req));
-  res.status(202).json({ message: 'If the account exists, further instructions will be provided.' });
-}
-
-export async function resetPassword(req: Request, res: Response): Promise<void> {
-  const input = resetPasswordSchema.parse(req.body);
-  await completePasswordReset(input.token, input.newPassword);
-  res.status(200).json({ message: 'Password reset complete. Please log in again.' });
-}
 
 export async function verifyEmailAddress(req: Request, res: Response): Promise<void> {
   const input = verifyEmailSchema.parse(req.body);
