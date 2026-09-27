@@ -9,7 +9,10 @@
  *
  *   1. backend/.env is created from .env.example (with freshly generated
  *      SESSION_SECRET / FLAG_HASH_SECRET) if it doesn't exist yet;
- *   2. backend dependencies are installed if node_modules is missing;
+ *   2. backend dependencies are installed if node_modules is missing — or
+ *      if it exists but was built on a different OS (native Prisma engines
+ *      and .bin shims are per-platform and do not survive being copied
+ *      between machines);
  *   3. the Prisma client is generated if missing;
  *   4. committed migrations are applied with `prisma migrate deploy`
  *      (forward-only; never reset) — pass --skip-migrate to opt out;
@@ -18,6 +21,9 @@
  *
  * The frontend port is derived from CORS_ORIGIN so the browser origin and
  * the API's allowed origin can never drift apart.
+ *
+ * Runs on Windows, macOS and Linux from one Node install: npm is invoked
+ * through its own CLI entry point rather than by shelling out to npm.cmd.
  */
 
 import { spawn } from 'node:child_process';
@@ -31,7 +37,32 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
 const BACKEND = path.join(ROOT, 'backend');
-const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+/*
+ * How to invoke npm from this launcher.
+ *
+ * On Windows `npm` is a batch file (npm.cmd), and Node's spawn() cannot
+ * execute a .cmd directly — CreateProcess needs a real executable, so the
+ * child dies with ENOENT before npm ever starts. The workaround is usually
+ * `shell: true`, but that re-parses every argument and is a quoting trap.
+ *
+ * npm exposes its own JavaScript entry point to child scripts as
+ * npm_execpath, so run that with the current node binary instead: one
+ * portable invocation, no shell, identical behaviour on every platform.
+ */
+const NPM_CLI = process.env.npm_execpath && fs.existsSync(process.env.npm_execpath) ? process.env.npm_execpath : null;
+const NPM = NPM_CLI ? process.execPath : process.platform === 'win32' ? 'npm.cmd' : 'npm';
+// Only the bare-command fallback needs a shell to reach npm.cmd.
+const NPM_NEEDS_SHELL = !NPM_CLI && process.platform === 'win32';
+
+const npmArgs = (args) => (NPM_CLI ? [NPM_CLI, ...args] : args);
+const npmOpts = (extra = {}) => ({ ...extra, ...(NPM_NEEDS_SHELL ? { shell: true } : {}) });
+
+/** How to stop a previously started instance, per platform. */
+const STOP_OTHER_INSTANCE =
+  process.platform === 'win32'
+    ? 'taskkill /F /IM node.exe'
+    : 'lsof -ti :4000 | xargs kill   (or: fuser -k 4000/tcp)';
 
 const colors = {
   api: '[36m', // cyan
@@ -53,17 +84,63 @@ function fail(msg, code = 1) {
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
-    // `quiet` swallows a probe command's output (used for the pre-flight
-    // lock check) while still reporting its exit code.
-    const { quiet, ...spawnOpts } = opts;
+    // `quiet` swallows a probe command's output while still reporting its
+    // exit code; `capture` keeps stdout/stderr so the caller can report why
+    // a probe failed instead of guessing.
+    const { quiet, capture, ...spawnOpts } = opts;
+    const piped = quiet || capture;
+    let stdout = '';
+    let stderr = '';
+
     const child = spawn(cmd, args, {
       cwd: BACKEND,
-      stdio: quiet ? ['ignore', 'ignore', 'ignore'] : 'inherit',
+      stdio: piped ? ['ignore', 'pipe', 'pipe'] : 'inherit',
       ...spawnOpts,
     });
-    child.on('error', reject);
-    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exited with ${code}`))));
+
+    if (piped) {
+      child.stdout?.on('data', (d) => {
+        stdout += d;
+      });
+      child.stderr?.on('data', (d) => {
+        stderr += d;
+      });
+    }
+
+    const describe = (code) => Object.assign(new Error(`${cmd} exited with ${code}`), {
+      code,
+      stdout,
+      stderr,
+      output: `${stdout}\n${stderr}`.trim(),
+    });
+
+    // `close` rather than `exit`: it fires after stdio has drained, so a
+    // captured message is never truncated.
+    child.on('error', (err) => reject(Object.assign(err, { stdout, stderr, output: `${stdout}\n${err.message}`.trim() })));
+    child.on('close', (code) => (code === 0 ? resolve({ code, stdout, stderr }) : reject(describe(code))));
   });
+}
+
+/** Print a captured probe's output as an indented block under a message. */
+function detail(text) {
+  const body = String(text || '').trim();
+  if (!body) return '(no output)';
+  return body
+    .split('\n')
+    .map((line) => `             ${line}`)
+    .join('\n');
+}
+
+/**
+ * Did this failure actually mean "another process holds the SQLite write
+ * lock"? Only the driver's own words count. Anything else — a missing
+ * platform engine, an unusable .bin shim, a malformed DATABASE_URL, a
+ * spawn that never started — is a different problem with a different fix,
+ * and calling all of them a lock is what made this message useless.
+ */
+function isSqliteLock(err) {
+  const text = `${(err && err.output) || ''} ${(err && err.stderr) || ''} ${(err && err.message) || ''}`;
+  return /database is locked|database table is locked|SQLITE_BUSY|Error code:\s*5\b/i.test(text);
 }
 
 /** Create backend/.env from the example with real random secrets. */
@@ -82,12 +159,55 @@ function ensureEnv() {
   sys('set DATABASE_URL (and optionally SEED_ADMIN_EMAIL / SEED_ADMIN_USERNAME / SEED_ADMIN_PASSWORD) before first run.');
 }
 
+/**
+ * Detect a node_modules that was installed on a different operating system.
+ *
+ * Such a tree is the worst kind of broken: every path the readiness checks
+ * look at exists, so nothing looks missing, but the .bin entries are
+ * symlinks from another filesystem and the native Prisma engines are built
+ * for another CPU/OS. Copying a project between machines is the normal way
+ * to produce one. On Windows the tell is exact — a native install always
+ * writes .cmd shims, so a tree with only the extensionless POSIX shim was
+ * installed elsewhere.
+ */
+function foreignPlatformInstall() {
+  const bin = path.join(BACKEND, 'node_modules', '.bin');
+  if (!fs.existsSync(bin)) return false;
+  const prisma = path.join(bin, 'prisma');
+  if (!fs.existsSync(prisma)) return true; // no usable shim at all
+
+  if (process.platform === 'win32') {
+    if (!fs.existsSync(`${prisma}.cmd`)) return true;
+  } else if (!fs.lstatSync(prisma).isSymbolicLink()) {
+    // POSIX installs shim .bin entries as symlinks into the package.
+    return true;
+  }
+
+  // Belt and braces: the Prisma engines themselves are per-platform, and an
+  // engine for another OS cannot run here.
+  const engines = path.join(BACKEND, 'node_modules', '@prisma', 'engines');
+  if (fs.existsSync(engines)) {
+    const wanted = { win32: 'windows', darwin: 'darwin' }[process.platform];
+    if (wanted && !fs.readdirSync(engines).some((f) => f.includes(wanted))) return true;
+  }
+  return false;
+}
+
 /** First-run dependency install + Prisma client generation. */
 async function ensureBackendReady() {
+  if (fs.existsSync(path.join(BACKEND, 'node_modules')) && foreignPlatformInstall()) {
+    sys('node_modules was installed on a different operating system — reinstalling…');
+    sys('           (native Prisma engines and .bin shims are built per platform and do not travel)');
+    try {
+      await run(NPM, npmArgs(['install']), npmOpts());
+    } catch {
+      fail('backend dependency install failed.');
+    }
+  }
   if (!fs.existsSync(path.join(BACKEND, 'node_modules'))) {
     sys('installing backend dependencies (first run — this takes a minute)…');
     try {
-      await run(NPM, ['install']);
+      await run(NPM, npmArgs(['install']), npmOpts());
     } catch {
       fail('backend dependency install failed.');
     }
@@ -95,7 +215,7 @@ async function ensureBackendReady() {
   if (!fs.existsSync(path.join(BACKEND, 'node_modules', '.prisma', 'client'))) {
     sys('generating Prisma client…');
     try {
-      await run(NPM, ['exec', '--', 'prisma', 'generate']);
+      await run(NPM, npmArgs(['exec', '--', 'prisma', 'generate']), npmOpts());
     } catch {
       fail('prisma generate failed — check backend/.env DATABASE_URL syntax.');
     }
@@ -114,22 +234,43 @@ async function applyMigrations() {
   if (fs.existsSync(path.join(BACKEND, 'prisma', 'dev.db'))) {
     sys('checking whether the database is already in use…');
     try {
-      await run(NPM, ['exec', '--', 'prisma', 'migrate', 'status'], { quiet: true });
-    } catch {
+      await run(NPM, npmArgs(['exec', '--', 'prisma', 'migrate', 'status']), npmOpts({ capture: true }));
+    } catch (err) {
+      if (isSqliteLock(err)) {
+        fail(
+          'The SQLite database is locked — another CyberYardHub instance is probably still running.\n' +
+          `           Stop it (Ctrl+C in its terminal, or: ${STOP_OTHER_INSTANCE}) and run \`npm run dev\` again.`,
+        );
+      }
       fail(
-        'The SQLite database is locked — another CyberYardHub instance is probably still running.\n' +
-        '           Stop it (Ctrl+C in its terminal, or: fuser -k 4000/tcp) and run `npm run dev` again.',
+        'could not read the database state, so startup stopped before migrating.\n' +
+        '           This is NOT a lock — the real cause is below:\n' +
+        `${detail(err.output)}\n` +
+        '           If node_modules was copied from another machine or OS, delete it and reinstall:\n' +
+        '             rmdir /s /q backend\\node_modules   (Windows)\n' +
+        '             rm -rf backend/node_modules       (macOS/Linux)\n' +
+        '             npm run setup',
       );
     }
   }
   sys('applying database migrations…');
   try {
-    await run(NPM, ['exec', '--', 'prisma', 'migrate', 'deploy']);
-  } catch {
+    // Captured rather than inherited so a failure can quote Prisma's own
+    // words back at the user; echoed on success so the normal case still
+    // shows which migrations ran.
+    const { stdout } = await run(NPM, npmArgs(['exec', '--', 'prisma', 'migrate', 'deploy']), npmOpts({ capture: true }));
+    if (stdout && stdout.trim()) process.stdout.write(stdout.endsWith('\n') ? stdout : `${stdout}\n`);
+  } catch (err) {
+    if (isSqliteLock(err)) {
+      fail(
+        'prisma migrate deploy failed: the SQLite database is locked.\n' +
+        `           Stop any other running instance (${STOP_OTHER_INSTANCE}) and run \`npm run dev\` again.`,
+      );
+    }
     fail(
       'prisma migrate deploy failed. Is the database file writable and is DATABASE_URL in backend/.env set?\n' +
       '           Recommended: DATABASE_URL="file:./dev.db?connection_limit=1" (single writer connection — no lock errors).\n' +
-      '           If the database is locked, stop any other running instance first (fuser -k 4000/tcp).',
+      `${detail(err.output)}`,
     );
   }
 }
@@ -276,7 +417,10 @@ async function main() {
   const { port: apiPort } = await resolveApiPort(configuredApiPort());
   writeApiBaseFile(apiPort);
 
-  const api = spawnLabeled('api', NPM, ['run', 'dev'], { cwd: BACKEND, env: { ...process.env, PORT: String(apiPort) } });
+  const api = spawnLabeled('api', NPM, npmArgs(['run', 'dev']), npmOpts({
+    cwd: BACKEND,
+    env: { ...process.env, PORT: String(apiPort) },
+  }));
   const web = spawnLabeled(
     'web',
     process.execPath,
