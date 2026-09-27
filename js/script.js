@@ -533,44 +533,6 @@
     return !!err && err.status === 401;
   }
 
-  /* ---------- localStorage storage shim ---------- */
-  /* Non-sensitive, per-device UI preferences ONLY (theme, notification
-     toggles) — see getUserSettings/saveUserSettings below. Authentication
-     state does NOT live here: the server session (httpOnly cookie) is the
-     sole source of truth for who's logged in, via /api/auth/*. Same shape
-     for callers as the old artifact-only window.storage API:
-     get(key) -> { value: string } | null ; set(key, value) ; delete(key) */
-  const STORAGE_PREFIX = 'cyberyardhub:';
-
-  const appStorage = {
-    async get(key){
-      try{
-        if(typeof localStorage === 'undefined') return null;
-        const raw = localStorage.getItem(STORAGE_PREFIX + key);
-        if(raw === null || raw === undefined) return null;
-        return { value: String(raw) };
-      }catch(e){
-        return null;
-      }
-    },
-    async set(key, value){
-      if(typeof localStorage === 'undefined'){
-        throw new Error('localStorage is unavailable in this browser.');
-      }
-      try{
-        localStorage.setItem(STORAGE_PREFIX + key, String(value));
-      }catch(e){
-        throw new Error('Unable to write to localStorage (quota or privacy mode).');
-      }
-    },
-    async delete(key){
-      try{
-        if(typeof localStorage === 'undefined') return;
-        localStorage.removeItem(STORAGE_PREFIX + key);
-      }catch(e){ /* ignore */ }
-    }
-  };
-
   /* ---------- auth state (server session is authoritative) ---------- */
   /* `currentUser` is an in-memory cache of the last GET /api/auth/me (or
      register/login) response for the lifetime of this page load ONLY —
@@ -3108,70 +3070,8 @@ setText('cd-title', 'Loading…');
   }
 
   /* ---------- settings (protected) ---------- */
-  const DEFAULT_USER_SETTINGS = { theme: 'default' };
-
-  function normalizeUserSettings(raw){
-    const base = { theme: DEFAULT_USER_SETTINGS.theme };
-    if(!raw || typeof raw !== 'object') return base;
-    if(raw.theme === 'dim' || raw.theme === 'default') base.theme = raw.theme;
-    return base;
-  }
-
-  async function getUserSettings(email){
-    try{
-      const res = await appStorage.get(settingsStorageKey(email));
-      if(!res || res.value == null) return normalizeUserSettings(null);
-      return normalizeUserSettings(JSON.parse(res.value));
-    }catch(e){
-      return normalizeUserSettings(null);
-    }
-  }
-
-  async function saveUserSettings(email, settings){
-    await appStorage.set(settingsStorageKey(email), JSON.stringify(normalizeUserSettings(settings)));
-  }
-
   /* Privacy: never store the raw email in a localStorage key (readable by
      any script with storage access). Hash it into an opaque per-account id. */
-  function settingsStorageKey(email){
-    const input = String(email || '').toLowerCase();
-    let h1 = 0x811c9dc5, h2 = 0x01000193;
-    for(let i=0;i<input.length;i++){
-      const c = input.charCodeAt(i);
-      h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
-      h2 = Math.imul(h2 + c + i, 2654435761) >>> 0;
-    }
-    return 'settings:' + h1.toString(16).padStart(8,'0') + h2.toString(16).padStart(8,'0') + '_' + input.length;
-  }
-
-  function applyTheme(theme){
-    document.body.dataset.theme = theme === 'dim' ? 'dim' : 'default';
-  }
-
-  function renderThemePills(theme){
-    document.querySelectorAll('#settings-theme-pills [data-theme-value]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.themeValue === theme);
-    });
-  }
-
-  function showSettingsFlash(id, message){
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.querySelector('.am').textContent = message;
-    el.classList.add('show');
-    clearTimeout(el._hideTimer);
-    el._hideTimer = setTimeout(() => el.classList.remove('show'), 2400);
-  }
-
-  async function applySessionPreferences(session){
-    if(!session){
-      applyTheme('default');
-      return;
-    }
-    const settings = await getUserSettings(session.email);
-    applyTheme(settings.theme);
-  }
-
   async function renderSettingsPage(session){
     setText('settings-username', session.username);
     setText('settings-email', session.email);
@@ -3184,29 +3084,17 @@ setText('cd-title', 'Loading…');
       setText('settings-since', '—');
     }
 
-    const settings = await getUserSettings(session.email);
-    applyTheme(settings.theme);
-    renderThemePills(settings.theme);
-
+    /* Account status still reflects email verification server-side, but the
+       resend control and the help copy lived in the removed verification
+       panel, so only the read-only tag is updated here. */
     const verified = !!session.emailVerified;
-    const status = document.getElementById('settings-verification-status');
-    const help = document.getElementById('settings-verification-help');
-    const resend = document.getElementById('settings-resend-verification');
     const accountStatus = document.getElementById('settings-account-status');
-    if(status){ status.textContent = verified ? 'Verified' : 'Unverified'; status.classList.toggle('accent', verified); }
-    if(help) help.textContent = verified ? 'Your email is verified and can be used for account recovery.' : 'Verify your email to keep your account recovery channel current.';
-    if(resend) resend.classList.toggle('hidden', verified);
     if(accountStatus) accountStatus.textContent = verified ? 'Active · verified' : 'Active · email unverified';
 
     clearAlerts('settings-pw');
-    const themeSuccess = document.getElementById('settings-theme-alert-success');
-    if(themeSuccess) themeSuccess.classList.remove('show');
-
     const pwForm = document.getElementById('settings-pw-form');
     if(pwForm) pwForm.reset();
     ['settings-pw-current-field','settings-pw-new-field','settings-pw-confirm-field'].forEach(id => setFieldError(id, false));
-    await loadSecuritySessions();
-
   }
 
   async function goToSettings(){
@@ -3217,22 +3105,6 @@ setText('cd-title', 'Loading…');
     showView('settings');
     window.scrollTo({top:0, behavior:'auto'});
     await renderSettingsPage(session);
-  }
-
-  async function setThemePreference(theme){
-    const session = await getSession();
-    if(!session){ redirectToLoginFromNav('open settings'); return; }
-    const next = theme === 'dim' ? 'dim' : 'default';
-    try{
-      const settings = await getUserSettings(session.email);
-      settings.theme = next;
-      await saveUserSettings(session.email, settings);
-      applyTheme(next);
-      renderThemePills(next);
-      showSettingsFlash('settings-theme-alert-success', 'Appearance preference saved on this device.');
-    }catch(e){
-      showAlert('settings-pw', 'error', 'Unable to save appearance preference.');
-    }
   }
 
   async function handleChangePassword(evt){
@@ -3259,7 +3131,6 @@ setText('cd-title', 'Loading…');
       await CyberYardHubAPI.auth.changePassword({ currentPassword: current, newPassword: next });
       showAlert('settings-pw', 'success', 'Password changed. Other active sessions have been signed out.');
       evt.target.reset();
-      await loadSecuritySessions();
     }catch(e){
       if(e.status === 401) showAlert('settings-pw', 'error', e.code === 'INVALID_CURRENT_PASSWORD' ? 'Current password is incorrect.' : 'Your session is no longer valid. Please log in again.');
       else if(e.status === 429) showAlert('settings-pw', 'error', 'Too many password-change attempts. Please try again later.');
@@ -3270,79 +3141,11 @@ setText('cd-title', 'Loading…');
     }
   }
 
-  function sessionBrowserLabel(userAgent){
-    const ua=String(userAgent||'');
-    let browser='Unknown browser';
-    if(/Edg\//i.test(ua)) browser='Microsoft Edge';
-    else if(/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) browser='Chrome';
-    else if(/Firefox\//i.test(ua)) browser='Firefox';
-    else if(/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser='Safari';
-    else if(/curl\//i.test(ua)) browser='curl';
-    let device='Unknown device';
-    if(/iPhone|iPad|iPod/i.test(ua)) device='iOS device';
-    else if(/Android/i.test(ua)) device='Android device';
-    else if(/Windows/i.test(ua)) device='Windows device';
-    else if(/Mac OS X/i.test(ua)) device='macOS device';
-    else if(/Linux/i.test(ua)) device='Linux device';
-    return `${browser} · ${device}`;
-  }
-
-  function formatSecurityDate(value){
-    if(!value) return '—';
-    const d=new Date(value);
-    if(Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
-  }
-
-  function renderSecuritySessions(sessions){
-    const root=document.getElementById('settings-sessions-list');
-    if(!root) return;
-    if(!sessions || sessions.length===0){ root.innerHTML='<div class="security-session-empty">No active sessions found.</div>'; return; }
-    root.innerHTML=sessions.map(session=>`<div class="security-session-row ${session.current?'is-current':''}">
-      <div class="security-session-main">
-        <div class="security-session-title">${escapeHtml(sessionBrowserLabel(session.userAgent))} ${session.current?'<span class="p-tag accent">Current</span>':''}</div>
-        <div class="security-session-meta">Signed in ${escapeHtml(formatSecurityDate(session.createdAt))} · Last activity ${escapeHtml(formatSecurityDate(session.lastActivityAt))}</div>
-      </div>
-      ${session.current?'':`<button type="button" class="btn btn-danger btn-small" onclick="revokeSecuritySession(${escapeHtml(JSON.stringify(session.id))})">Revoke</button>`}
-    </div>`).join('');
-  }
-
-  async function loadSecuritySessions(){
-    const root=document.getElementById('settings-sessions-list');
-    if(root) root.innerHTML='<div class="security-session-empty">Loading sessions…</div>';
-    try{
-      const response=await CyberYardHubAPI.auth.sessions();
-      renderSecuritySessions(response.sessions || []);
-    }catch(e){
-      if(isUnauthorizedError(e)){ currentUser=null; redirectToLoginFromNav('manage your sessions'); return; }
-      if(root) root.innerHTML=`<div class="security-session-empty">${escapeHtml(e.message || 'Unable to load sessions.')}</div>`;
-    }
-  }
-
   async function revokeSecuritySession(id){
     try{
       await CyberYardHubAPI.auth.revokeSession(id);
-      await loadSecuritySessions();
       if(window.cyhNotify) window.cyhNotify('Session revoked.', 'success');
     }catch(e){ if(window.cyhNotify) window.cyhNotify(e.message || 'Unable to revoke session.', 'error'); }
-  }
-
-  async function revokeAllOtherSessions(){
-    try{
-      const result=await CyberYardHubAPI.auth.revokeOtherSessions();
-      await loadSecuritySessions();
-      if(window.cyhNotify) window.cyhNotify(`${result.revoked || 0} other session${result.revoked === 1 ? '' : 's'} revoked.`, 'success');
-    }catch(e){ if(window.cyhNotify) window.cyhNotify(e.message || 'Unable to revoke sessions.', 'error'); }
-  }
-
-  async function resendVerificationEmail(){
-    const button=document.getElementById('settings-resend-verification');
-    if(button) { button.disabled=true; button.textContent='Sending…'; }
-    try{
-      const result=await CyberYardHubAPI.auth.resendVerification();
-      if(window.cyhNotify) window.cyhNotify(result.message || 'If needed, a verification email has been sent.', 'success');
-    }catch(e){ if(window.cyhNotify) window.cyhNotify(e.message || 'Unable to resend verification email.', 'error'); }
-    finally{ if(button){button.disabled=false;button.textContent='Resend verification email';} }
   }
 
   async function handleVerificationRoute(token){
@@ -3455,7 +3258,6 @@ setText('cd-title', 'Loading…');
       document.getElementById('mm-email').textContent = session.email;
       syncUserAvatar(session);
     }
-    await applySessionPreferences(session);
     updateActiveNav();
     void refreshHomeLiveStats();
     if(session) connectRealtimeStream(session); else stopRealtimeStream();

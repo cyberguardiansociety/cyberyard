@@ -1624,13 +1624,12 @@
   <section id="view-settings" class="view" aria-labelledby="settings-heading">
     <div class="dashboard-shell">
 
-
       <div class="dash-main">
         <div class="dash-welcome-row">
           <div class="dash-welcome">
             <div class="public-eyebrow">ACCOUNT</div>
             <h1 id="settings-heading">Settings</h1>
-            <p>Manage your account, security, and appearance.</p>
+            <p>Your account details and how you change your password.</p>
           </div>
         </div>
 
@@ -1700,37 +1699,13 @@
           </form>
         </div>
 
-        <div class="panel-block security-status-panel">
-          <div class="panel-head"><h3>Email verification</h3><span class="ph-sub">Account recovery</span></div>
-          <p class="settings-help" id="settings-verification-help">Your verification status is checked against the server.</p>
-          <div class="security-status-row">
-            <span class="p-tag" id="settings-verification-status">Checking…</span>
-            <button type="button" class="btn btn-ghost btn-small" id="settings-resend-verification" onclick="resendVerificationEmail()">Resend verification email</button>
-          </div>
-        </div>
+        
 
-        <div class="panel-block">
-          <div class="panel-head"><h3>Active sessions</h3><span class="ph-sub">Server-side sessions</span></div>
-          <p class="settings-help">Review recent sign-ins and revoke sessions you no longer recognize. Raw session tokens are never shown.</p>
-          <div class="security-session-actions"><button type="button" class="btn btn-ghost btn-small" onclick="revokeAllOtherSessions()">Revoke all other sessions</button></div>
-          <div class="security-sessions" id="settings-sessions-list"><div class="security-session-empty">Loading sessions…</div></div>
-        </div>
+        
 
-        <div class="panel-block">
-          <div class="panel-head"><h3>Appearance</h3><span class="ph-sub">Theme preference</span></div>
-          <p class="settings-help">Choose how CyberYardHub looks on this device. Preference is saved locally.</p>
-          <div class="filter-row" id="settings-theme-pills">
-            <button type="button" class="filter-pill active" data-theme-value="default" onclick="setThemePreference('default')">Void (default)</button>
-            <button type="button" class="filter-pill" data-theme-value="dim" onclick="setThemePreference('dim')">Dim panels</button>
-          </div>
-          <div class="alert alert-success" id="settings-theme-alert-success" style="margin-top:18px; margin-bottom:0;"><span class="ai">✓</span><span class="am"></span></div>
-        </div>
+        
 
-        <div class="panel-block" style="margin-bottom:0;">
-          <div class="panel-head"><h3>Session</h3><span class="ph-sub">Sign out of this device</span></div>
-          <p class="settings-help">Logging out clears your local session. Your account and saved preferences stay on this browser.</p>
-          <button type="button" class="btn btn-ghost" onclick="handleLogout()">Log out</button>
-        </div>
+        
       </div>
     </div>
   </section>
