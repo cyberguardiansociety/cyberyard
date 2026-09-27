@@ -1,0 +1,17 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware';
+import { asyncHandler } from '../utils/asyncHandler';
+import * as c from '../controllers/social.controller';
+import { communityWriteRateLimit } from '../middleware/communityRateLimit';
+const router = Router();
+router.get('/me/profile', requireAuth, asyncHandler(c.getMyProfile));
+router.patch('/me/profile', requireAuth, communityWriteRateLimit('profile'), asyncHandler(c.patchMyProfile));
+router.get('/me/blocked', requireAuth, asyncHandler(c.getBlockedUsers));
+router.get('/:id/profile', requireAuth, asyncHandler(c.getProfile));
+router.post('/:id/follow', requireAuth, communityWriteRateLimit('follow'), asyncHandler(c.followUser));
+router.delete('/:id/follow', requireAuth, communityWriteRateLimit('follow'), asyncHandler(c.unfollowUser));
+router.get('/:id/followers', requireAuth, asyncHandler(c.getFollowers));
+router.get('/:id/following', requireAuth, asyncHandler(c.getFollowing));
+router.post('/:id/block', requireAuth, communityWriteRateLimit('block'), asyncHandler(c.blockUser));
+router.delete('/:id/block', requireAuth, communityWriteRateLimit('block'), asyncHandler(c.unblockUser));
+export default router;

@@ -1,0 +1,72 @@
+# ---------------------------------------------------------------------------
+# CyberYardHub — root .gitignore
+#
+# backend/.gitignore holds the same exclusions for the backend subtree. This
+# root file is what makes them apply to the whole repository, and it also adds
+# the top-level items (editor/DS_Store junk, local tooling output, and the
+# root package install).
+#
+# The rules below are the project's deliberate security policy, not a
+# convenience: backend/scripts/security-audit.mjs has a check named
+# "No .env committed in project tree" that fails if backend/.env is not
+# covered by a .gitignore rule. Keep them.
+# ---------------------------------------------------------------------------
+
+# --- Secrets -----------------------------------------------------------------
+# Real environment configuration, including SESSION_SECRET (which signs the
+# session cookie) and FLAG_HASH_SECRET (which keys the flag HMAC). Committing
+# these would let anyone forge sessions and derive challenge flags.
+# backend/.env.example IS committed: it carries the placeholders instead.
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# --- Local database ----------------------------------------------------------
+# SQLite file plus its WAL/sidecar files. Contains user records, password
+# hashes, session token hashes and reset/verification tokens.
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
+prisma/**/*.db
+prisma/**/*.db-journal
+prisma/**/*.db-wal
+prisma/**/*.db-shm
+# Stray literal artifact of a file-URL migration (not a real DB).
+prisma/:memory:
+
+# --- Dependencies & build output --------------------------------------------
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# --- Logs --------------------------------------------------------------------
+# Runtime application logs (see backend/src/utils/logger.ts). These record
+# request paths, failure counters and environment details.
+*.log
+*.log.*
+logs/
+
+# --- Runtime challenge-file storage ------------------------------------------
+# Uploaded challenge files, managed by the application at runtime.
+backend/storage/
+storage/
+uploads/
+
+# --- Local tooling / editor --------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Local environment overrides ---------------------------------------------
+# Machine-specific dev values that should never be shared.
+.env.local
+.env.*.local

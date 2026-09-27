@@ -1,0 +1,10 @@
+[
+  {
+    "slug": "web-echo-1",
+    "name": "Echo Chamber",
+    "baseUrl": "http://127.0.0.1:3001",
+    "healthPath": "/health",
+    "resetPath": "/__reset",
+    "enabled": true
+  }
+]

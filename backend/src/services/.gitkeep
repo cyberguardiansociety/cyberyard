@@ -1,0 +1,5 @@
+This folder holds business-logic modules (e.g. auth.service.ts,
+challenges.service.ts, scoring.service.ts) that controllers call into.
+Controllers stay thin (parse request, call a service, send response);
+services own the actual logic and talk to Prisma. Empty in Phase 1 —
+first services arrive in Phase 2 (auth).

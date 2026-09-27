@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware';
+import { requireAdmin } from '../middleware/admin.middleware';
+import { adminRateLimit } from '../middleware/adminRateLimit';
+import { adminAudit } from '../middleware/adminAudit.middleware';
+import { asyncHandler } from '../utils/asyncHandler';
+import { deleteAdminBadgeById, getAdminBadges, patchAdminBadge, postAdminBadge } from '../controllers/badges.controller';
+const router = Router();
+router.use(requireAuth, requireAdmin, adminRateLimit, adminAudit);
+router.get('/badges', asyncHandler(getAdminBadges));
+router.post('/badges', asyncHandler(postAdminBadge));
+router.patch('/badges/:id', asyncHandler(patchAdminBadge));
+router.delete('/badges/:id', asyncHandler(deleteAdminBadgeById));
+export default router;

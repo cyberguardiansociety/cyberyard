@@ -1,0 +1,4 @@
+This folder holds Zod request-validation schemas (e.g. auth.schema.ts with
+registerSchema/loginSchema), one file per resource, imported by routes or
+controllers to validate req.body/req.query/req.params before any service
+logic runs. Empty in Phase 1 — first schemas arrive in Phase 2 (auth).

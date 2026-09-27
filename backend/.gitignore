@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+
+# Runtime challenge-file storage (managed by the application)
+storage/
+
+# Rotated application logs (app.log and app.log.N — see src/utils/logger.ts).
+# *.log above only covers the active file; rotated .log.N siblings land here.
+logs/
+
+# Local SQLite database and WAL/sidecar files
+prisma/dev.db
+prisma/dev.db-journal
+prisma/dev.db-wal
+prisma/dev.db-shm
+prisma/*.db
+prisma/**/*.db
+prisma/**/*.db-journal
+prisma/**/*.db-wal
+prisma/**/*.db-shm
+

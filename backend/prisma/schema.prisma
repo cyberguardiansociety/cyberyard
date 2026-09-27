@@ -1,0 +1,817 @@
+// CyberYardHub — Prisma schema
+//
+// Phase 2: authentication foundation — users, profiles, sessions, user_settings.
+// Phase 3: Challenges + flag submission foundation — categories,
+//   difficulties, challenges, flags, submissions, solves.
+// Phase 7: hints, challenge files, and writeups are modeled below.
+//
+// SQLite has no native enum or JSON column types. Enum-like columns below are
+// stored as TEXT and are constrained by the canonical values in
+// `backend/src/constants/enums.ts` plus zod validation at the API edges, not
+// by the database. JSON-shaped values are stored as TEXT and must be
+// JSON.stringify'd/JSON.parse'd by the service layer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Site-wide role. Only two values for now — enough to gate future
+/// admin-only endpoints (challenge management) without over-designing
+/// a permissions system nothing yet needs.
+// Former enum values (TEXT in SQLite): Role = USER, ADMIN
+
+/// A registered account. Authentication lives here; display/profile
+/// content is deliberately split out into Profile (see below) so this
+/// table stays small and rarely-written.
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         String   @default("USER")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  lastLoginAt       DateTime? @map("last_login_at")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+
+  profile  Profile?
+  settings UserSettings?
+  sessions Session[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  securityEvents SecurityEvent[]
+  notifications Notification[]
+  activities UserActivity[]
+  gamification GamificationProfile?
+  xpTransactions XpTransaction[]
+
+  submissions       Submission[]
+  solves            Solve[]
+  createdChallenges Challenge[] @relation("ChallengeCreator")
+  createdEvents Event[] @relation("EventCreator")
+  eventRegistrations EventRegistration[]
+  createdEventAnnouncements EventAnnouncement[] @relation("EventAnnouncementCreator")
+  firstBloods FirstBlood[]
+  hintUnlocks      HintUnlock[]
+  badgeAwards      UserBadge[]
+  communityPosts   CommunityPost[]
+  communityComments CommunityComment[]
+  followsGiven Follow[] @relation("FollowFollower")
+  followsReceived Follow[] @relation("FollowFollowing")
+  blocksGiven Block[] @relation("Blocker")
+  blocksReceived Block[] @relation("Blocked")
+  communityReactions CommunityReaction[]
+  communityReports CommunityReport[] @relation("ReportReporter")
+  resolvedCommunityReports CommunityReport[] @relation("ReportResolver")
+  // Team membership is deliberately NOT a platform role: the canonical `Role`
+  // values stay USER/ADMIN, while per-team authority (captain vs member) lives
+  // on TeamMember.role (TeamRole) and is only checked inside team logic.
+  memberships TeamMember[]
+  ownedTeams Team[] @relation("TeamCaptain")
+  scoreAdjustmentsReceived ScoreAdjustment[] @relation("ScoreAdjustmentTarget")
+  scoreAdjustmentsIssued ScoreAdjustment[] @relation("ScoreAdjustmentActor")
+
+  @@index([role])
+  @@map("users")
+}
+
+/// Public-facing profile content, separate from the account/auth record.
+/// One-to-one with User via a shared primary key (userId) rather than a
+/// second surrogate id, since a profile never exists without its user and
+/// is always looked up by user, never independently.
+model Profile {
+  userId    String   @id @map("user_id")
+  bio       String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+/// Per-user preferences (theme, notification toggles). Mirrors the shape
+/// already used by the existing frontend's `settings:{email}` window.storage
+/// record, so a future data migration is a straight copy.
+model UserSettings {
+  userId                  String   @id @map("user_id")
+  theme                   String   @default("default")
+  notifyChallengeUpdates  Boolean  @default(true) @map("notify_challenge_updates")
+  notifyLeaderboardAlerts Boolean  @default(false) @map("notify_leaderboard_alerts")
+  notifyProductNews       Boolean  @default(true) @map("notify_product_news")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+/// A server-side session record. The value handed to the browser (in an
+/// httpOnly cookie) is this row's `id` — an opaque random token — never a
+/// JWT and never anything containing user data itself. This table is the
+/// SQLite-backed implementation of the app's `SessionStore` interface
+/// (see src/services/session.store.ts); swapping in Redis later means
+/// adding a RedisSessionStore that satisfies the same interface, not
+/// changing this schema or any controller.
+model Session {
+  id        String   @id
+  userId    String   @map("user_id")
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+  createdAt      DateTime @default(now()) @map("created_at")
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+  expiresAt      DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+
+
+
+// Former enum values (TEXT in SQLite): ChallengeStatus = DRAFT, PUBLISHED, ARCHIVED
+
+// Former enum values (TEXT in SQLite): NotificationType = CHALLENGE_PUBLISHED, CHALLENGE_SOLVED, FIRST_BLOOD, BADGE_EARNED, SYSTEM, COMMUNITY
+
+// Former enum values (TEXT in SQLite): UserActivityType = ACCOUNT_REGISTERED, LOGIN_SUCCESS, CHALLENGE_SOLVED, FIRST_BLOOD, BADGE_EARNED, PROFILE_UPDATED, COMMUNITY_POST_CREATED, COMMUNITY_POST_UPDATED, COMMUNITY_POST_DELETED, COMMUNITY_COMMENT_CREATED, COMMUNITY_COMMENT_UPDATED, COMMUNITY_COMMENT_DELETED, COMMUNITY_REACTION_ADDED, COMMUNITY_REACTION_REMOVED, USER_FOLLOWED, USER_UNFOLLOWED, USER_BLOCKED, USER_UNBLOCKED, COMMUNITY_REPORT_CREATED, COMMUNITY_REPORT_RESOLVED, PASSWORD_CHANGED, PASSWORD_RESET_COMPLETED, EMAIL_VERIFIED, SESSION_REVOKED, LEVEL_UP, STREAK_MILESTONE, EVENT_REGISTERED, EVENT_UNREGISTERED, EVENT_ANNOUNCEMENT_CREATED, EVENT_CREATED, EVENT_UPDATED, EVENT_PUBLISHED, EVENT_ARCHIVED, EVENT_CHALLENGE_CHANGED, TEAM_CREATED, TEAM_JOINED, TEAM_LEFT, TEAM_DISSOLVED
+
+// Former enum values (TEXT in SQLite): XpTransactionSource = CHALLENGE_SOLVE, FIRST_BLOOD, BADGE_EARNED
+
+/// Per-team authority, stored per membership row. Deliberately separate
+/// from the site-wide `Role` values (USER/ADMIN): a user can be platform
+/// ADMIN without captaining any team, and a captain has no platform-wide
+/// powers — captain checks only ever gate actions on their own team.
+// Former enum values (TEXT in SQLite): TeamRole = CAPTAIN, MEMBER
+
+/// How a challenge's point value is computed when a solve is awarded.
+/// STATIC awards the configured base points (today's behavior); DYNAMIC
+/// decays toward a floor as the solve count grows. The final value is
+/// frozen into Solve.pointsAwarded at award time — see src/services/scoring.ts.
+// Former enum values (TEXT in SQLite): ScoringMode = STATIC, DYNAMIC
+
+/// How a challenge's flag is verified. STATIC compares against the stored
+/// keyed hash exactly as before. DYNAMIC additionally accepts a per-user
+/// flag derived server-side (HMAC over userId+challengeId) so leaked flags
+/// are only valid for the account that received it.
+// Former enum values (TEXT in SQLite): FlagMode = STATIC, DYNAMIC
+
+
+// Former enum values (TEXT in SQLite): CommunityCategory = GENERAL, CTF, WEB_SECURITY, NETWORK_SECURITY, CRYPTOGRAPHY, FORENSICS, REVERSE_ENGINEERING, OSINT, LEARNING, ANNOUNCEMENTS
+
+// Former enum values (TEXT in SQLite): CommunityReactionType = LIKE
+
+// Former enum values (TEXT in SQLite): CommunityReportReason = SPAM, HARASSMENT, ABUSE, OFFENSIVE_CONTENT, MALICIOUS_CONTENT, SECURITY_ABUSE, OTHER
+
+// Former enum values (TEXT in SQLite): CommunityReportStatus = PENDING, REVIEWED, RESOLVED, DISMISSED
+
+// Former enum values (TEXT in SQLite): SecurityEventType = LOGIN_SUCCESS, LOGIN_FAILURE, LOGOUT, PASSWORD_CHANGE, PASSWORD_RESET_REQUEST, PASSWORD_RESET_COMPLETION, EMAIL_VERIFICATION, SESSION_REVOKED, ADMIN_CHALLENGE_CREATED, ADMIN_CHALLENGE_UPDATED, ADMIN_CHALLENGE_PUBLISHED, ADMIN_CHALLENGE_UNPUBLISHED, ADMIN_CHALLENGE_ARCHIVED, ADMIN_CHALLENGE_DELETED, ADMIN_HINT_CHANGED, ADMIN_WRITEUP_CHANGED, ADMIN_CHALLENGE_FILE_CHANGED, ADMIN_CHALLENGE_FLAG_CHANGED
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      String           @default("SYSTEM")
+  title     String
+  message   String
+  link      String?
+  targetId  String?          @map("target_id")
+  readAt    DateTime?        @map("read_at")
+  dedupeKey String?          @unique @map("dedupe_key")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@map("notifications")
+}
+
+model UserActivity {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  type        String           @default("ACCOUNT_REGISTERED")
+  description String
+  targetId    String?          @map("target_id")
+  targetType  String?          @map("target_type")
+  metadata    String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@map("user_activities")
+}
+
+model GamificationProfile {
+  userId                  String   @id @map("user_id")
+  totalXp                 Int      @default(0) @map("total_xp")
+  currentLevel            Int      @default(1) @map("current_level")
+  currentStreak           Int      @default(0) @map("current_streak")
+  longestStreak           Int      @default(0) @map("longest_streak")
+  lastQualifyingSolveDate DateTime? @map("last_qualifying_solve_date")
+  // Lifetime points earned from first-blood bonuses (the bonus portion of
+  // Solve.pointsAwarded). Incremented in the same transaction that claims
+  // the FirstBlood row — see src/services/submission.service.ts. Separate
+  // from totalXp: the XP ledger (XpTransaction) is intentionally untouched.
+  bloodPoints Int @default(0) @map("blood_points")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([totalXp])
+  @@index([currentLevel])
+  @@map("gamification_profiles")
+}
+
+model XpTransaction {
+  id        String             @id @default(uuid())
+  userId    String             @map("user_id")
+  amount    Int
+  source    String             @default("CHALLENGE_SOLVE")
+  eventKey  String             @unique @map("event_key")
+  targetId  String?            @map("target_id")
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, source, createdAt])
+  @@index([targetId])
+  @@map("xp_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Teams + score adjustments
+// ---------------------------------------------------------------------------
+
+/// A CTF team. `captainId` is a RESTRICT FK back to User: deleting a user
+/// who captains a team must fail loudly rather than silently orphaning the
+/// team (admins dissolve teams explicitly instead). Team score is NOT
+/// stored here — it is computed on read from members' solves plus score
+/// adjustments (see src/services/team.service.ts), so it can never drift
+/// from the underlying rows.
+model Team {
+  id         String   @id @default(uuid())
+  name       String
+  slug       String   @unique
+  inviteCode String   @unique @map("invite_code")
+  captainId  String   @map("captain_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  captain User         @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: Restrict)
+  members TeamMember[]
+
+  @@index([captainId])
+  @@map("teams")
+}
+
+/// A user's membership on their (single) team. `userId` carries its own
+/// unique constraint — a user belongs to at most one team — and the
+/// composite unique additionally keeps duplicate inserts of the same
+/// member impossible at the database level.
+model TeamMember {
+  id       String   @id @default(uuid())
+  teamId   String   @map("team_id")
+  userId   String   @unique @map("user_id")
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@map("team_members")
+}
+
+/// Administrative point corrections, applied additively to a user's
+/// solve-derived leaderboard score at read time (never written into
+/// Solve.rows). `adminId` records who made the adjustment; body-less
+/// adminAudit logging covers the request side, this row covers the value.
+model ScoreAdjustment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  delta     Int
+  reason    String
+  adminId   String   @map("admin_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User @relation("ScoreAdjustmentTarget", fields: [userId], references: [id], onDelete: Cascade)
+  admin User @relation("ScoreAdjustmentActor", fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("score_adjustments")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model SecurityEvent {
+  id                String            @id @default(uuid())
+  userId            String?           @map("user_id")
+  targetChallengeId String?           @map("target_challenge_id")
+  type              String            @default("LOGIN_SUCCESS")
+  ipAddress String?           @map("ip_address")
+  userAgent String?           @map("user_agent")
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([targetChallengeId, createdAt])
+  @@index([type, createdAt])
+  @@map("security_events")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7: hints, challenge files, and writeups
+// ---------------------------------------------------------------------------
+
+model Hint {
+  id          String       @id @default(uuid())
+  challengeId String       @map("challenge_id")
+  title       String
+  content     String
+  cost        Int          @default(0)
+  sortOrder   Int          @default(0) @map("sort_order")
+  isEnabled   Boolean      @default(true) @map("is_enabled")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  challenge Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  unlocks   HintUnlock[]
+
+  @@index([challengeId, sortOrder])
+  @@map("hints")
+}
+
+model HintUnlock {
+  userId     String   @map("user_id")
+  hintId     String   @map("hint_id")
+  costPaid   Int      @map("cost_paid")
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hint Hint @relation(fields: [hintId], references: [id], onDelete: Cascade)
+
+  @@id([userId, hintId])
+  @@index([hintId])
+  @@map("hint_unlocks")
+}
+
+model ChallengeFile {
+  id           String   @id @default(uuid())
+  challengeId  String   @map("challenge_id")
+  originalName String   @map("original_name")
+  storageName  String   @unique @map("storage_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  isEnabled    Boolean  @default(true) @map("is_enabled")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@map("challenge_files")
+}
+
+model Writeup {
+  id          String   @id @default(uuid())
+  challengeId String   @unique @map("challenge_id")
+  content     String
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@map("writeups")
+}
+
+
+// ---------------------------------------------------------------------------
+// Phase 8: badges / achievements + community
+// ---------------------------------------------------------------------------
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String
+  slug        String      @unique
+  description String
+  icon        String
+  criteria    String   @default("{}")
+  isEnabled   Boolean     @default(true) @map("is_enabled")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  awards      UserBadge[]
+
+  @@index([isEnabled])
+  @@map("badges")
+}
+
+model UserBadge {
+  userId    String   @map("user_id")
+  badgeId   String   @map("badge_id")
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@index([badgeId])
+  @@index([userId, awardedAt])
+  @@map("user_badges")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("FollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId, createdAt])
+  @@index([followingId, createdAt])
+  @@map("follows")
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId, createdAt])
+  @@index([blockedId, createdAt])
+  @@map("blocks")
+}
+
+model CommunityPost {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  content   String
+  category  String             @default("GENERAL")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments CommunityComment[]
+  reactions CommunityReaction[]
+  reports CommunityReport[] @relation("ReportedPost")
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([userId, createdAt])
+  @@map("community_posts")
+}
+
+model CommunityComment {
+  id        String   @id @default(uuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports CommunityReport[] @relation("ReportedComment")
+
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
+  @@map("community_comments")
+}
+
+model CommunityReaction {
+  id        String                  @id @default(uuid())
+  userId    String                  @map("user_id")
+  postId    String                  @map("post_id")
+  type      String               @default("LIKE")
+  createdAt DateTime                @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, type])
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
+  @@map("community_reactions")
+}
+
+model CommunityReport {
+  id          String                  @id @default(uuid())
+  reporterId  String                  @map("reporter_id")
+  postId      String?                 @map("post_id")
+  commentId   String?                 @map("comment_id")
+  reason      String              @default("SPAM")
+  description String?
+  status      String                 @default("PENDING")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  resolvedAt  DateTime?               @map("resolved_at")
+  resolvedBy  String?                 @map("resolved_by")
+
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post CommunityPost? @relation("ReportedPost", fields: [postId], references: [id], onDelete: SetNull)
+  comment CommunityComment? @relation("ReportedComment", fields: [commentId], references: [id], onDelete: SetNull)
+  resolver User? @relation("ReportResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, postId])
+  @@unique([reporterId, commentId])
+  @@index([status, createdAt])
+  @@index([postId])
+  @@index([commentId])
+  @@index([reporterId, createdAt])
+  @@map("community_reports")
+}
+
+// Former enum values (TEXT in SQLite): EventStatus = DRAFT, UPCOMING, LIVE, ENDED, ARCHIVED
+
+model Event {
+  id                   String      @id @default(uuid())
+  name                 String
+  slug                 String      @unique
+  shortDescription     String?     @map("short_description")
+  description          String
+  status               String    @default("DRAFT")
+  startAt              DateTime    @map("start_at")
+  endAt                DateTime    @map("end_at")
+  registrationStartAt  DateTime    @map("registration_start_at")
+  registrationEndAt    DateTime    @map("registration_end_at")
+  maxParticipants     Int?        @map("max_participants")
+  registrationRequired Boolean     @default(true) @map("registration_required")
+  createdBy            String      @map("created_by")
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
+
+  creator        User                @relation("EventCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  registrations  EventRegistration[]
+  challenges     EventChallenge[]
+  announcements  EventAnnouncement[]
+
+  @@index([status, startAt])
+  @@index([status, endAt])
+  @@index([registrationStartAt, registrationEndAt])
+  @@index([createdBy, createdAt])
+  @@map("events")
+}
+
+model EventRegistration {
+  id           String   @id @default(uuid())
+  eventId      String   @map("event_id")
+  userId       String   @map("user_id")
+  registeredAt DateTime @default(now()) @map("registered_at")
+  completedAt  DateTime? @map("completed_at")
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([eventId, registeredAt])
+  @@index([userId, registeredAt])
+  @@map("event_registrations")
+}
+
+model EventChallenge {
+  id             String   @id @default(uuid())
+  eventId        String   @map("event_id")
+  challengeId    String   @map("challenge_id")
+  position       Int
+  availableFrom  DateTime? @map("available_from")
+  availableUntil DateTime? @map("available_until")
+
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, challengeId])
+  @@index([eventId, position])
+  @@index([challengeId, eventId])
+  @@map("event_challenges")
+}
+
+model EventAnnouncement {
+  id        String   @id @default(uuid())
+  eventId   String   @map("event_id")
+  createdBy String   @map("created_by")
+  title     String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  creator User  @relation("EventAnnouncementCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([eventId, createdAt])
+  @@index([createdBy, createdAt])
+  @@map("event_announcements")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: Challenges + flag submission foundation
+// ---------------------------------------------------------------------------
+
+/// A challenge category (e.g. "Web Exploitation", "Cryptography"). Kept as
+/// a real table rather than a hardcoded enum so new categories don't
+/// require a code change — matches the existing frontend's filter pills,
+/// which are just strings today.
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  slug String @unique
+
+  challenges Challenge[]
+
+  @@map("categories")
+}
+
+/// A difficulty tier (e.g. "Easy" .. "Insane"). `sortOrder` lets the API
+/// (and eventually the frontend) present these in a fixed, sensible order
+/// rather than alphabetically or by insertion order.
+model Difficulty {
+  id        Int    @id @default(autoincrement())
+  name      String @unique
+  sortOrder Int    @default(0) @map("sort_order")
+
+  challenges Challenge[]
+
+  @@map("difficulties")
+}
+
+/// A single CTF challenge's public/administrative metadata. Deliberately
+/// contains NOTHING secret — the correct flag lives entirely in the
+/// separate Flag model (one-to-one) so a bug that accidentally serializes
+/// a Challenge row can never leak a flag.
+model Challenge {
+  id           String          @id @default(uuid())
+  title        String
+  slug         String          @unique
+  categoryId   Int             @map("category_id")
+  difficultyId Int             @map("difficulty_id")
+  points       Int
+  scoringMode  String     @default("STATIC") @map("scoring_mode")
+  teaser       String?
+  description  String
+  status       String         @default("DRAFT")
+  isPublished  Boolean         @default(false) @map("is_published")
+  publishedAt  DateTime?       @map("published_at")
+  archivedAt   DateTime?       @map("archived_at")
+  createdBy    String?         @map("created_by")
+  // Optional unlock gate: users must hold a Solve row for this prerequisite
+  // before the challenge accepts submissions. SetNull keeps history intact
+  // if a prerequisite is ever deleted (the dependent simply unlocks).
+  prerequisiteId String?      @map("prerequisite_id")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  category   Category    @relation(fields: [categoryId], references: [id])
+  difficulty Difficulty  @relation(fields: [difficultyId], references: [id])
+  creator    User?       @relation("ChallengeCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  prerequisite  Challenge? @relation("ChallengePrerequisite", fields: [prerequisiteId], references: [id], onDelete: SetNull)
+  dependentChallenges Challenge[] @relation("ChallengePrerequisite")
+
+  flag        Flag?
+  submissions Submission[]
+  solves      Solve[]
+  firstBlood  FirstBlood?
+  hints       Hint[]
+  files       ChallengeFile[]
+  writeup     Writeup?
+  eventChallenges EventChallenge[]
+
+  @@index([categoryId])
+  @@index([difficultyId])
+  @@index([status])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([archivedAt])
+  @@index([prerequisiteId])
+  @@map("challenges")
+}
+
+model FirstBlood {
+  challengeId String   @id @map("challenge_id")
+  userId      String   @map("user_id")
+  solvedAt    DateTime @default(now()) @map("solved_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("first_bloods")
+}
+
+/// The correct answer for a challenge, stored ONLY as a keyed hash
+/// (HMAC-SHA256 with a server-side secret — see src/utils/flagHash.ts),
+/// never in plaintext. One-to-one with Challenge via a shared primary key.
+/// No API route ever selects this model for a response body; it is read
+/// only by the submission service, server-side, to verify an attempt.
+model Flag {
+  challengeId   String   @id @map("challenge_id")
+  flagHash      String   @map("flag_hash")
+  caseSensitive Boolean  @default(true) @map("case_sensitive")
+  mode          String @default("STATIC")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@map("flags")
+}
+
+/// Every flag attempt, correct or not — an audit trail, and the basis for
+/// rate-limiting/abuse review. `submittedValueHash` stores a hash of what
+/// was typed, not the plaintext guess, so this table can't become a
+/// second place flags leak from if the database is ever compromised.
+model Submission {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  challengeId        String   @map("challenge_id")
+  submittedValueHash String   @map("submitted_value_hash")
+  isCorrect          Boolean  @map("is_correct")
+  ipAddress          String?  @map("ip_address")
+  submittedAt        DateTime @default(now()) @map("submitted_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId])
+  @@index([userId, challengeId])
+  @@index([submittedAt])
+  @@map("submissions")
+}
+
+/// One row per user+challenge, created exactly once on that pair's first
+/// correct submission. The composite primary key IS the duplicate-solve
+/// guard: a second attempt to create the same (userId, challengeId) row
+/// fails at the database level (unique-constraint violation) even under
+/// concurrent requests, which is what the submission service relies on
+/// instead of a racy "check then insert". `pointsAwarded` freezes how many
+/// points this solve was worth at the time, so a later change to a
+/// challenge's point value never rewrites history.
+model Solve {
+  userId        String   @map("user_id")
+  challengeId   String   @map("challenge_id")
+  solvedAt      DateTime @default(now()) @map("solved_at")
+  pointsAwarded Int      @map("points_awarded")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, challengeId])
+  @@index([challengeId])
+  @@map("solves")
+}

@@ -1,0 +1,28 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware';
+import { requireAdmin } from '../middleware/admin.middleware';
+import { adminRateLimit } from '../middleware/adminRateLimit';
+import { adminAudit } from '../middleware/adminAudit.middleware';
+import { eventRateLimit } from '../middleware/eventRateLimit';
+import { asyncHandler } from '../utils/asyncHandler';
+import * as c from '../controllers/admin.event.controller';
+
+const router = Router();
+router.use(requireAuth, requireAdmin, adminRateLimit, adminAudit);
+router.get('/events', asyncHandler(c.listAdminEvents));
+router.get('/events/:id', asyncHandler(c.getAdminEvent));
+router.post('/events', eventRateLimit('admin'), asyncHandler(c.createAdminEvent));
+router.patch('/events/:id', eventRateLimit('admin'), asyncHandler(c.updateAdminEvent));
+router.delete('/events/:id', eventRateLimit('admin'), asyncHandler(c.deleteAdminEvent));
+router.post('/events/:id/publish', eventRateLimit('admin'), asyncHandler(c.publishAdminEvent));
+router.post('/events/:id/archive', eventRateLimit('admin'), asyncHandler(c.archiveAdminEvent));
+router.post('/events/:id/challenges', eventRateLimit('admin'), asyncHandler(c.addChallenge));
+router.patch('/events/:id/challenges/order', eventRateLimit('admin'), asyncHandler(c.reorderChallenges));
+router.delete('/events/:id/challenges/:challengeId', eventRateLimit('admin'), asyncHandler(c.removeChallenge));
+router.post('/events/:id/announcements', eventRateLimit('announcement'), asyncHandler(c.createAnnouncement));
+router.patch('/events/:id/announcements/:announcementId', eventRateLimit('announcement'), asyncHandler(c.updateAnnouncement));
+router.delete('/events/:id/announcements/:announcementId', eventRateLimit('announcement'), asyncHandler(c.deleteAnnouncement));
+router.get('/events/:id/participants', asyncHandler(c.participants));
+router.delete('/events/:id/participants/:registrationId', eventRateLimit('admin'), asyncHandler(c.removeParticipant));
+router.get('/events/:id/stats', asyncHandler(c.stats));
+export default router;

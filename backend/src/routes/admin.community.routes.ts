@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware';
+import { requireAdmin } from '../middleware/admin.middleware';
+import { adminRateLimit } from '../middleware/adminRateLimit';
+import { adminAudit } from '../middleware/adminAudit.middleware';
+import { asyncHandler } from '../utils/asyncHandler';
+import * as c from '../controllers/social.controller';
+const router = Router();
+router.use(requireAuth, requireAdmin, adminRateLimit, adminAudit);
+router.get('/community/reports', asyncHandler(c.getAdminReports));
+router.get('/community/reports/:id', asyncHandler(c.getAdminReport));
+router.patch('/community/reports/:id', asyncHandler(c.resolveAdminReport));
+router.delete('/community/posts/:id', asyncHandler(c.adminDeletePost));
+router.delete('/community/posts/:id/comments/:commentId', asyncHandler(c.adminDeleteComment));
+export default router;

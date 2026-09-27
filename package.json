@@ -1,0 +1,23 @@
+{
+  "name": "cyberyardhub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CyberYardHub — local-first CTF platform. Root helper: all Node tooling lives in backend/; the frontend (index.html, css/, js/) is a static site served by any file server.",
+  "scripts": {
+    "setup": "npm --prefix backend install && npm --prefix backend exec -- prisma generate",
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "node scripts/serve-static.mjs --port 5500",
+    "build": "npm --prefix backend run build",
+    "start": "npm --prefix backend run start",
+    "type-check": "npm --prefix backend run type-check",
+    "audit:security": "npm --prefix backend run security:audit",
+    "migrate": "npm --prefix backend run prisma:migrate",
+    "migrate:deploy": "npm --prefix backend exec -- prisma migrate deploy",
+    "seed": "npm --prefix backend run prisma:seed",
+    "studio": "npm --prefix backend run prisma:studio"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

@@ -1,0 +1,21 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware';
+import { asyncHandler } from '../utils/asyncHandler';
+import { communityWriteRateLimit } from '../middleware/communityRateLimit';
+import * as c from '../controllers/social.controller';
+
+const router = Router();
+router.get('/feed', requireAuth, asyncHandler(c.getCommunityFeed));
+router.get('/posts', requireAuth, asyncHandler(c.getCommunityFeed));
+router.get('/posts/:id', requireAuth, asyncHandler(c.getCommunityPost));
+router.get('/posts/:id/comments', requireAuth, asyncHandler(c.getCommunityComments));
+router.post('/posts', requireAuth, communityWriteRateLimit('post'), asyncHandler(c.createCommunityPost));
+router.patch('/posts/:id', requireAuth, communityWriteRateLimit('post'), asyncHandler(c.updateCommunityPost));
+router.delete('/posts/:id', requireAuth, communityWriteRateLimit('post'), asyncHandler(c.deleteCommunityPost));
+router.post('/posts/:id/comments', requireAuth, communityWriteRateLimit('comment'), asyncHandler(c.createCommunityComment));
+router.patch('/posts/:id/comments/:commentId', requireAuth, communityWriteRateLimit('comment'), asyncHandler(c.updateCommunityComment));
+router.delete('/posts/:id/comments/:commentId', requireAuth, communityWriteRateLimit('comment'), asyncHandler(c.deleteCommunityComment));
+router.post('/posts/:id/reaction', requireAuth, communityWriteRateLimit('reaction'), asyncHandler(c.addPostReaction));
+router.delete('/posts/:id/reaction', requireAuth, communityWriteRateLimit('reaction'), asyncHandler(c.removePostReaction));
+router.post('/reports', requireAuth, communityWriteRateLimit('report'), asyncHandler(c.reportCommunityContent));
+export default router;

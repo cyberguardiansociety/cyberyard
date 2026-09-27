@@ -1,0 +1,4 @@
+This folder holds shared ambient/type-only declarations that don't belong
+to a single resource — e.g. an Express Request augmentation
+(`req.user`/`req.session`) once auth exists, or shared API response types.
+Empty in Phase 1 — first additions arrive in Phase 2 (auth).
