@@ -6153,93 +6153,6 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
 .home-context-body small{ margin-top:5px; color:var(--muted-2); font-size:12px; line-height:1.5; display:block; }
 .home-context-card{ padding:18px 18px; }
 
-/* ---------- C. account sub-navigation (replaces the sidebar) ---------- */
-.account-subnav{
-  position:sticky;
-  top:82px;
-  z-index:40;
-  width:min(var(--clay-content),calc(100% - 40px));
-  margin:0 auto;
-  padding:0 0 12px;
-}
-.account-subnav[hidden]{ display:none!important; }
-.account-subnav-inner{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  padding:10px 12px;
-  border:1px solid var(--clay-border);
-  border-radius:var(--clay-radius-lg);
-  background:var(--clay-surface-raised);
-  box-shadow:var(--clay-shadow);
-  backdrop-filter:blur(16px) saturate(130%);
-  -webkit-backdrop-filter:blur(16px) saturate(130%);
-}
-.account-subnav-links{
-  display:flex;
-  align-items:center;
-  gap:3px;
-  flex-wrap:wrap;
-  min-width:0;
-}
-.account-subnav-link{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  min-height:38px;
-  padding:7px 11px;
-  border-radius:var(--clay-radius-md);
-  color:var(--muted);
-  font-size:12.5px;
-  font-weight:500;
-  transition:color .2s ease,background .2s ease;
-}
-.account-subnav-link svg{ width:15px; height:15px; flex-shrink:0; }
-.account-subnav-link:hover{ color:var(--text); background:var(--clay-accent-soft); }
-.account-subnav-link.active{
-  color:var(--text);
-  background:var(--clay-accent-soft);
-  box-shadow:inset 0 0 0 1px rgba(84,223,255,.24);
-}
-.account-subnav-link.active svg{ color:var(--cyh-cyan); }
-.account-subnav-tail{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-shrink:0;
-  padding-left:12px;
-  border-left:1px solid var(--clay-border);
-}
-.account-subnav-user{ display:flex; align-items:center; gap:9px; min-width:0; }
-.account-subnav-avatar{
-  display:grid;
-  place-items:center;
-  width:30px;
-  height:30px;
-  flex:0 0 30px;
-  border-radius:50%;
-  border:1px solid var(--clay-border-strong);
-  background:var(--clay-accent-soft);
-  color:var(--text);
-  font-family:'Chakra Petch',sans-serif;
-  font-size:12px;
-  font-weight:600;
-}
-.account-subnav-meta{ min-width:0; display:flex; flex-direction:column; }
-.account-subnav-meta b{ font-size:12.5px; line-height:1.2; white-space:nowrap; }
-.account-subnav-meta small{ color:var(--muted-2); font-size:10.5px; white-space:nowrap; }
-
-/* The shell is now a single centred column: no sidebar reserves space, so
-   every authenticated view gets the full content width. */
-.view:not(#view-landing) .dashboard-shell{ justify-content:center; }
-.view:not(#view-landing) .dash-main{
-  width:min(100%,1280px);
-  margin:0 auto;
-  padding:26px clamp(22px,4vw,56px) 96px;
-}
-.view:not(#view-landing) .dash-welcome-row{ padding-top:0; }
-
 /* ---------- D. challenges: filter rail + results ---------- */
 .range-browser{
   display:grid;
@@ -6859,10 +6772,7 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
   .lb-selected-user{ position:static; }
   .flagdesk{ grid-template-columns:1fr; }
   .flagdesk-hero{ grid-template-columns:1fr; }
-  .account-subnav{ position:static; }
-  .account-subnav-inner{ flex-direction:column; align-items:stretch; }
-  .account-subnav-tail{ padding:10px 0 0; border-left:0; border-top:1px solid var(--clay-border); justify-content:space-between; }
-  .view:not(#view-landing) .dash-main{ padding-top:22px; }
+        .view:not(#view-landing) .dash-main{ padding-top:22px; }
 }
 @media (max-width:900px){
   .home-glance-grid{ grid-template-columns:1fr; }
@@ -6878,8 +6788,7 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
   #view-landing .home-minimal-shell{ padding-top:72px; }
   #view-landing .hero{ padding:26px 18px 30px; }
   .home-live,
-  .account-subnav{ width:calc(100% - 24px); }
-  .home-live-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .home-live-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .home-loop{ grid-template-columns:1fr; gap:12px; }
   .home-loop-marker::after{ display:none; }
   .home-os-grid{ grid-template-columns:1fr; }
@@ -6899,11 +6808,7 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
   .home-glance-card{ grid-template-columns:1fr; }
   .home-glance-tag{ grid-column:1; }
   .profile-figures{ grid-template-columns:1fr; }
-  .account-subnav-links{ gap:2px; }
-  .account-subnav-link span{ display:none; }
-  .account-subnav-link{ padding:8px 10px; }
-  .account-subnav-link svg{ width:17px; height:17px; }
-}
+      }
 @media (prefers-reduced-motion:reduce){
   .home-live-pulse,
   .home-live-card[data-state="live"] .home-live-pulse{ animation:none; }
@@ -7188,8 +7093,6 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
 .avatar-circle-sm,
 .pc-xl,
 .profile-avatar-xl,
-.account-subnav-avatar{ position:relative; overflow:hidden; }
-.account-subnav-avatar{ display:grid; place-items:center; }
 .pc-xl{ display:grid; place-items:center; }
 /* The initial stays in the DOM behind the image. No display juggling: the
    image is absolutely positioned over it, and `onerror` in js/script.js
@@ -7200,33 +7103,7 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
    things you do on a run (challenges, submit, scoreboard, teams) and the
    things that are about you (overview, events, community, badges, activity,
    profile, settings), with a rule between them. */
-.account-subnav-links{ align-items:stretch; }
-.account-subnav-group{
-  display:flex;
-  align-items:center;
-  gap:3px;
-  flex-wrap:wrap;
-  min-width:0;
-}
-.account-subnav-group-label{
-  padding:0 8px 0 4px;
-  color:var(--muted-2);
-  font-size:9.5px;
-  font-weight:700;
-  letter-spacing:1.3px;
-  text-transform:uppercase;
-  white-space:nowrap;
-}
-.account-subnav-rule{
-  width:1px;
-  align-self:stretch;
-  margin:6px 8px;
-  background:var(--clay-border);
-}
-@media (max-width:640px){
-  .account-subnav-group-label{ display:none; }
-  .account-subnav-rule{ margin:2px 6px; }
-}
+
 
 /* ---------- sticky offsets for the play flow ----------
    The filter rail and the operator inspector were positioned to clear the
@@ -7239,4 +7116,44 @@ body:not(.cyh-authed) [data-nav-auth-only]{ display:none; }
   /* Already static below this width; the rule is a no-op but keeps intent clear. */
   #view-challenges .range-filters,
   #view-leaderboard .lb-selected-user{ top:auto; }
+}
+
+/* =====================================================================
+   HEADER CLEARANCE
+   #site-header is `position:fixed`, so it is out of normal flow and
+   `<main>` starts at y=0 underneath it. Every surface therefore has to
+   reserve the header's own height itself. The old per-view sidebars used
+   to absorb this with their own padding-top; once they were gone nothing
+   did, which is why page titles sat behind the navbar.
+
+   One token, applied everywhere, so a change to the header's height is a
+   one-line fix instead of a hunt through per-page padding.
+   ===================================================================== */
+:root{ --header-clear: 92px; }
+
+/* Authenticated shell: the first child is the page title, with no inner
+   top padding of its own, so this is the only thing keeping it clear. */
+.view:not(#view-landing) .dash-main{ padding-top:var(--header-clear); }
+
+/* Landing: the hero carries its own generous top padding, so the shell
+   needs the clearance but not the full value. Still ~50px tighter than the
+   pre-redesign 86px + 92px stack. */
+#view-landing .home-minimal-shell{ padding-top:84px; }
+
+/* Public pages (about, rules, teams, submit flag) already use a clamp whose
+   floor is 92px; pin it to the token so the two can never drift. */
+.public-page{ padding-top:max(var(--header-clear), clamp(92px,10vw,138px)); }
+
+/* Auth split layout: the rail is the first thing under the navbar. */
+.authx{ padding-top:var(--header-clear); }
+@media (max-width:1080px){
+  /* The old rule added another 28px of header allowance inside the rail;
+     the shell now owns that clearance, so the rail goes back to a plain
+     padding and the two do not stack. */
+  .authx-rail{ padding:18px clamp(22px,5vw,44px) clamp(26px,4vw,38px); }
+}
+@media (max-width:760px){
+  .authx{ padding:0; }
+  .authx-rail{ padding:calc(var(--header-clear) - 34px) 20px 30px; }
+  .authx-panel{ padding-top:var(--header-clear); }
 }

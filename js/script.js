@@ -191,7 +191,6 @@
       closeAvatarMenu();
       currentNav = 'home';
       updateActiveNav();
-      syncAccountSubnav(null);
       showLandingNotice('Sign in to continue to that space.');
       const landing = document.getElementById('view-landing');
       if(landing){
@@ -214,7 +213,6 @@
     view.classList.add('active');
     activeViewName = normalized;
     cyhPageEnter(view);
-    syncAccountSubnav(currentUser);
     requestAnimationFrame(()=>{cyhPrepareReveal(view);cyhAnimateProgress(view);});
     return true;
   }
@@ -1098,31 +1096,6 @@
     await renderProfilePage(session);
   }
 
-  /* ---------- account sub-navigation ----------
-     The old per-view sidebar was copy-pasted into thirteen views, so account
-     navigation was declared thirteen times and could drift. This one bar is
-     declared once, and it now appears only on the account surfaces.
-
-     It is deliberately ABSENT from the play flow — challenges, challenge
-     detail, scoreboard, teams and submit flag. All of those already have a
-     permanent link in the site header, so a second full-width nav strip
-     directly beneath it was pure duplication, and the challenges page has
-     its own filter rail competing for the same space. The avatar menu and
-     the footer still reach every destination from there. */
-  const SUBNAV_VIEWS = new Set([
-    'dashboard', 'profile', 'badges', 'activity', 'settings',
-    'community', 'events', 'event-detail', 'admin'
-  ]);
-
-  function syncAccountSubnav(session){
-    const bar = document.getElementById('account-subnav');
-    if(!bar) return;
-    bar.hidden = !(!!session && SUBNAV_VIEWS.has(activeViewName));
-    if(!session) return;
-    setText('account-subnav-username', session.username);
-    setText('account-subnav-email', session.email);
-  }
-
   function syncFooterAccountState(session){
     document.querySelectorAll('[data-nav-guest-action]').forEach(el => { el.hidden = !!session; });
     document.querySelectorAll('[data-nav-authed-cta]').forEach(el => { el.hidden = !session; });
@@ -1140,7 +1113,6 @@
      navbar. */
   const AVATAR_SLOTS = [
     { image: 'nav-avatar-image',            initial: 'nav-avatar-initial' },
-    { image: 'account-subnav-avatar-image', initial: 'account-subnav-avatar' },
     { image: 'mm-avatar-image',             initial: 'mm-avatar-initial' },
     { image: 'profile-hero-avatar-image',   initial: 'profile-hero-avatar-initial' }
   ];
@@ -1323,7 +1295,6 @@
     if(!session){ redirectToLoginFromNav('view your activity'); return; }
     currentNav='activity'; updateActiveNav();
     showView('activity'); window.scrollTo({top:0,behavior:'auto'});
-    syncAccountSubnav(session);
     activityOffset=0; await loadActivityPage();
   }
 
@@ -1695,7 +1666,6 @@ showView('badges');
     currentNav = 'leaderboard'; updateActiveNav();
     showView('leaderboard');
     window.scrollTo({top:0, behavior:'auto'});
-    syncAccountSubnav(session);
     renderScoreboardMode('solo');
     resetScoreboardFilters();
     document.getElementById('lb-selected-user')?.classList.add('hidden');
@@ -2596,7 +2566,6 @@ opsInitConsole();
     currentNav = 'challenges'; updateActiveNav();
     showView('challenges');
     window.scrollTo({top:0, behavior:'auto'});
-    syncAccountSubnav(session);
 
     const search = document.getElementById('chal-search-input');
     if(search && search.value !== challengeFilters.search) search.value = challengeFilters.search;
@@ -2940,7 +2909,6 @@ setText('cd-title', 'Loading…');
     setTeamsControlsDisabled(false);
     showView('teams');
     window.scrollTo({top:0, behavior:'auto'});
-    syncAccountSubnav(session);
     clearTeamsStatus();
     await loadMyTeam();
   }
@@ -3480,7 +3448,6 @@ setText('cd-title', 'Loading…');
     document.getElementById('mm-user').classList.toggle('hidden', !session);
     applyNavAccessVisibility(session);
     syncFooterAccountState(session);
-    syncAccountSubnav(session);
     if(session){
       document.getElementById('ad-username').textContent = session.username;
       document.getElementById('ad-email').textContent = session.email;
